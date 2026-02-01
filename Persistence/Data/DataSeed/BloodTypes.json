@@ -1,0 +1,10 @@
+[
+  {"Symbol": "A", "RhFactor": "+" },
+  {"Symbol": "A", "RhFactor": "-" },
+  {"Symbol": "B", "RhFactor": "+" },
+  {"Symbol": "B", "RhFactor": "-" },
+  {"Symbol": "AB", "RhFactor": "+" },
+  {"Symbol": "AB", "RhFactor": "-" },
+  {"Symbol": "O", "RhFactor": "+" },
+  {"Symbol": "O", "RhFactor": "-" }
+]

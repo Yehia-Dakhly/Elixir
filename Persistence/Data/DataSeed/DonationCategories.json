@@ -1,0 +1,22 @@
+[
+  {
+    "NameAr": "دم كامل",
+    "maleMinDaysInterval": 90,
+    "femaleMinDaysInterval": 120
+  },
+  {
+    "NameAr": "صفائح دموية",
+    "maleMinDaysInterval": 14,
+    "femaleMinDaysInterval": 14
+  },
+  {
+    "NameAr": "بلازما",
+    "maleMinDaysInterval": 28,
+    "femaleMinDaysInterval": 28
+  },
+  {
+    "NameAr": "كريات دم حمراء",
+    "maleMinDaysInterval": 112,
+    "femaleMinDaysInterval": 112
+  }
+]

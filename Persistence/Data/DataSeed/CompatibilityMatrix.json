@@ -1,0 +1,138 @@
+[
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 1,
+    "RecipientTypeId": 1
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 2,
+    "RecipientTypeId": 1
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 7,
+    "RecipientTypeId": 1
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 8,
+    "RecipientTypeId": 1
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 2,
+    "RecipientTypeId": 2
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 8,
+    "RecipientTypeId": 2
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 3,
+    "RecipientTypeId": 3
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 4,
+    "RecipientTypeId": 3
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 7,
+    "RecipientTypeId": 3
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 8,
+    "RecipientTypeId": 3
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 4,
+    "RecipientTypeId": 4
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 8,
+    "RecipientTypeId": 4
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 1,
+    "RecipientTypeId": 5
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 2,
+    "RecipientTypeId": 5
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 3,
+    "RecipientTypeId": 5
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 4,
+    "RecipientTypeId": 5
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 5,
+    "RecipientTypeId": 5
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 6,
+    "RecipientTypeId": 5
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 7,
+    "RecipientTypeId": 5
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 8,
+    "RecipientTypeId": 5
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 2,
+    "RecipientTypeId": 6
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 4,
+    "RecipientTypeId": 6
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 6,
+    "RecipientTypeId": 6
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 8,
+    "RecipientTypeId": 6
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 7,
+    "RecipientTypeId": 7
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 8,
+    "RecipientTypeId": 7
+  },
+  {
+    "DonationCategoryId": 1,
+    "DonorTypeId": 8,
+    "RecipientTypeId": 8
+  }
+
+]
