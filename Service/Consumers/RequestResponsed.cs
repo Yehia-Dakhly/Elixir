@@ -41,6 +41,7 @@ namespace Service.Consumers
             BloodRequest.ResponsesCount++;
             BloodRequestsRepo.Update(BloodRequest);
             #endregion
+
             await _requestsUpdate.UpdateRequestAsync(Msg.BloodRequestId, new { ResponsesCount = BloodRequest.ResponsesCount, CollectedCount = BloodRequest.CollectedBags });
             
             #region Add Donation Response To History

@@ -14,7 +14,7 @@ namespace ServiceAbstraction
         // Register
         // Take Email, FullName, BloodTypeId, Age, Gender, Latitude, Longitude, CityId
         // Return Token, Email, Display Name
-        Task<AuthUserDTo> RegisterAsync(RegisterDTo registerDTo);
+        Task<AuthRegisterDTo> RegisterAsync(RegisterDTo registerDTo);
         // Login
         // Take Email And Password, Return Token, Display Name
         Task<AuthUserDTo> LoginAsync(LoginDTo loginDTo);
@@ -24,5 +24,6 @@ namespace ServiceAbstraction
         Task ConfirmEmail(ConfirmEmailDTo confirmEmailDTo);
         Task<AuthUserDTo> GoogleLoginAsync(GoogleLoginDTo googleLoginDTo);
         public Task<bool> ChangePasswordAsync(ChangePasswordDTo changePasswordDTo);
+        public Task<RefreshTokenDTo> RefreshTokenAsync(RefreshTokenDTo model);
     }
 }

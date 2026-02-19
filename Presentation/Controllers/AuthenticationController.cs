@@ -21,7 +21,7 @@ namespace Presentation.Controllers
             return Ok(await _serviceManager.AuthenticationService.GoogleLoginAsync(googleLoginDTo));
         }
         [HttpPost("register")]
-        public async Task<ActionResult<AuthUserDTo>> Register(RegisterDTo registerDTo)
+        public async Task<ActionResult<AuthRegisterDTo>> Register(RegisterDTo registerDTo)
         {
             return Ok(await _serviceManager.AuthenticationService.RegisterAsync(registerDTo));
         }
@@ -64,6 +64,12 @@ namespace Presentation.Controllers
         public async Task<ActionResult<bool>> ChangePasswordAsync(ChangePasswordDTo changePasswordDTo)
         {
             return Ok(await _serviceManager.AuthenticationService.ChangePasswordAsync(changePasswordDTo));
+        }
+
+        [HttpPost("refresh-token")]
+        public async Task<ActionResult<AuthUserDTo>> RefreshToken(RefreshTokenDTo refreshTokenDTo)
+        {
+            return Ok(await _serviceManager.AuthenticationService.RefreshTokenAsync(refreshTokenDTo));
         }
         private string GetSuccessPage() => @"
                                         <!DOCTYPE html>

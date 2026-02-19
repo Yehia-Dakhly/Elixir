@@ -6,14 +6,10 @@ using System.Threading.Tasks;
 
 namespace Shared.DataTransferObjects.Authentication
 {
-    public class AuthUserDTo
+    public class RefreshTokenDTo
     {
         public string Token { get; set; } = null!;
         public string RefreshToken { get; set; } = null!;
         public DateTime RefreshTokenExpiration { get; set; }
-        public string FullName { get; set; } = null!;
-        public string Email { get; set; } = null!;
-        public string CityName { get; set; } = null!;
-        public string GovernorateName { get; set; } = null!;
     }
 }

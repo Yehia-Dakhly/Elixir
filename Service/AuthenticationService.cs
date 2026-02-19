@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using DomainLayer.Contracts;
+﻿using DomainLayer.Contracts;
 using DomainLayer.Exceptions;
 using DomainLayer.Exceptions.NotFoundExceptions;
 using DomainLayer.Models;
@@ -20,12 +19,9 @@ using Shared.DataTransferObjects.Authentication.PasswordsAndOTPDTos;
 using Shared.DataTransferObjects.Authentication.ResetForgetChangePasswordDTos;
 using Shared.Events;
 using System.IdentityModel.Tokens.Jwt;
-using System.Net;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using static MassTransit.ValidationResultExtensions;
-using static System.Net.WebRequestMethods;
 using Gender = DomainLayer.Models.Gender;
 
 
@@ -42,25 +38,25 @@ namespace Service
         IGeoLocationService _geoLocationService) : IAuthenticationService
     {
         private readonly BloodDonationSettings _settings = _optionsSnapshot.Value;
-        public async Task<AuthUserDTo> RegisterAsync(RegisterDTo registerDTo)
+        public async Task<AuthRegisterDTo> RegisterAsync(RegisterDTo registerDTo)
         {
             Gender Gender = registerDTo.Gender == 0 ? Gender.Undefined : registerDTo.Gender == 1 ? Gender.Male : Gender.Female;
             var NewUser = new BloodDonationUser()
-                {
-                    FullName = registerDTo.FullName,
-                    Email = registerDTo.Email,
-                    Age = registerDTo.Age,
-                    BloodTypeId = registerDTo.BloodTypeId,
-                    Gender = Gender,
-                    Latitude = registerDTo.Latitude,
-                    Longitude = registerDTo.Longitude,
-                    CityId = registerDTo.CityId,
-                    UserName = registerDTo.Email,
-                    PhoneNumber = registerDTo.PhoneNumber,
-                    DeviceToken = registerDTo.DeviceToken,
-                    LastTokenUpdate = DateTime.UtcNow,
-                    IsAvailable = true,
-                };
+            {
+                FullName = registerDTo.FullName,
+                Email = registerDTo.Email,
+                Age = registerDTo.Age,
+                BloodTypeId = registerDTo.BloodTypeId,
+                Gender = Gender,
+                Latitude = registerDTo.Latitude,
+                Longitude = registerDTo.Longitude,
+                CityId = registerDTo.CityId,
+                UserName = registerDTo.Email,
+                PhoneNumber = registerDTo.PhoneNumber,
+                DeviceToken = registerDTo.DeviceToken,
+                LastTokenUpdate = DateTime.UtcNow,
+                IsAvailable = true,
+            };
             var Result = await _userManager.CreateAsync(NewUser, registerDTo.Password);
             if (Result.Succeeded)
             {
@@ -88,13 +84,10 @@ namespace Service
                 var CityRepo = _unitOfWork.GetRepository<City, int>();
                 var SpecificationCity = new CityWithGovernorateByCityId(NewUser.CityId);
                 var City = await CityRepo.GetByIdAsync(SpecificationCity);
-                return new AuthUserDTo()
+                return new AuthRegisterDTo()
                 {
                     Email = registerDTo.Email,
                     FullName = registerDTo.FullName,
-                    Token = await CreateTokenAsync(NewUser),
-                    CityName = City.NameAr,
-                    GovernorateName = City.Governorate.NameAr
                 };
             }
             else
@@ -105,12 +98,12 @@ namespace Service
         }
         public async Task<AuthUserDTo> LoginAsync(LoginDTo loginDTo)
         {
-            var User = await _userManager.Users.Include(U => U.City).ThenInclude(C => C.Governorate).FirstOrDefaultAsync(U => U.Email == loginDTo.Email) ?? throw new UserNotFoundException(loginDTo.Email);
+            var User = await _userManager.Users.Include(U => U.City).ThenInclude(C => C.Governorate).Include(U => U.RefreshTokens).FirstOrDefaultAsync(U => U.Email == loginDTo.Email) ?? throw new UserNotFoundException(loginDTo.Email);
             if (await _userManager.IsLockedOutAsync(User))
             {
                 throw new UnauthorizedException("هذا الحساب محظور، يرجى التواصل مع الإدارة!");
             }
-            if(await _userManager.IsEmailConfirmedAsync(User) == false)
+            if (await _userManager.IsEmailConfirmedAsync(User) == false)
             {
                 throw new ForbiddenException("من فضلك فعّل بريدك الإلكتروني قبل تسجيل الدخول.");
             }
@@ -123,13 +116,29 @@ namespace Service
                     await _userManager.UpdateAsync(User);
                     await _geoLocationService.UpdateDonorLocationAndDeviceTokenAsync(User.Id.ToString(), User.DeviceToken, User.Longitude, User.Latitude, User.BloodTypeId.ToString());
                 }
-                return new AuthUserDTo() 
-                { 
-                    Email = loginDTo.Email,
+                #region Refresh Token
+                var rawRefreshToken = GenerateSecureToken();
+                var refreshTokenHash = ComputeSha256Hash(rawRefreshToken);
+
+                var refreshTokenEntity = new RefreshToken
+                {
+                    TokenHash = refreshTokenHash,
+                    ExpiresOn = DateTime.UtcNow.AddDays(_settings.RefreshTokenLifespanInDays),
+                    CreatedOn = DateTime.UtcNow
+                };
+                User.RefreshTokens.Add(refreshTokenEntity);
+                await _userManager.UpdateAsync(User);
+                #endregion
+
+                return new AuthUserDTo // With Refresh Token
+                {
+                    Email = User.Email!,
                     FullName = User.FullName,
                     Token = await CreateTokenAsync(User),
                     CityName = User.City.NameAr,
                     GovernorateName = User.City.Governorate.NameAr,
+                    RefreshToken = rawRefreshToken,
+                    RefreshTokenExpiration = refreshTokenEntity.ExpiresOn
                 };
             }
             else
@@ -156,7 +165,7 @@ namespace Service
             }
             var User = await _userManager.Users.Include(U => U.City).ThenInclude(C => C.Governorate).FirstOrDefaultAsync(U => U.Email == payload.Email) ?? throw new UserNotFoundException(payload.Email);
 
-             if (!User.EmailConfirmed)
+            if (!User.EmailConfirmed)
                 throw new ForbiddenException("من فضلك فعّل بريدك الإلكتروني قبل تسجيل الدخول.");
             if (googleLoginDTo.DeviceToken is not null) // Consume
             {
@@ -164,13 +173,30 @@ namespace Service
                 await _userManager.UpdateAsync(User);
                 await _geoLocationService.UpdateDonorLocationAndDeviceTokenAsync(User.Id.ToString(), User.DeviceToken, User.Longitude, User.Latitude, User.BloodTypeId.ToString());
             }
-            return new AuthUserDTo
+
+            #region Refresh Token
+            var rawRefreshToken = GenerateSecureToken();
+            var refreshTokenHash = ComputeSha256Hash(rawRefreshToken);
+
+            var refreshTokenEntity = new RefreshToken
+            {
+                TokenHash = refreshTokenHash,
+                ExpiresOn = DateTime.UtcNow.AddDays(_settings.RefreshTokenLifespanInDays),
+                CreatedOn = DateTime.UtcNow
+            };
+            User.RefreshTokens.Add(refreshTokenEntity);
+            await _userManager.UpdateAsync(User);
+            #endregion
+
+            return new AuthUserDTo // With Refresh Token
             {
                 Email = User.Email!,
                 FullName = User.FullName,
                 Token = await CreateTokenAsync(User),
                 CityName = User.City.NameAr,
-                GovernorateName = User.City.Governorate.NameAr
+                GovernorateName = User.City.Governorate.NameAr,
+                RefreshToken = rawRefreshToken,
+                RefreshTokenExpiration = refreshTokenEntity.ExpiresOn
             };
         }
         private async Task<string> CreateTokenAsync(BloodDonationUser user)
@@ -241,7 +267,8 @@ namespace Service
             User.ExpireCodeTime = null!;
             await _userManager.UpdateAsync(User);
             var token = await _userManager.GeneratePasswordResetTokenAsync(User);
-            return new ResetPasswordToken() {
+            return new ResetPasswordToken()
+            {
                 ResetToken = token
             };
         }
@@ -284,6 +311,96 @@ namespace Service
                 throw new BadRequestException(Errors);
             }
             return true;
+        }
+
+
+        #region Generate and Hash Token
+        private string GenerateSecureToken()
+        {
+            var randomNumber = new byte[32];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
+        }
+        private string ComputeSha256Hash(string rawData)
+        {
+            using var sha256 = SHA256.Create();
+            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(rawData));
+            return Convert.ToBase64String(bytes);
+        }
+        #endregion
+
+        public async Task<RefreshTokenDTo> RefreshTokenAsync(RefreshTokenDTo model)
+        {
+            var principal = GetPrincipalFromExpiredToken(model.Token);
+            if (principal == null) throw new Exception("Invalid Access Token");
+
+            var email = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email)) throw new Exception("Invalid Token Claims");
+
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null) throw new Exception("User not found");
+
+            var incomingTokenHash = ComputeSha256Hash(model.RefreshToken);
+
+            var userRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.TokenHash == incomingTokenHash);
+
+            if (userRefreshToken == null || !userRefreshToken.IsActive)
+                throw new Exception("Invalid or Expired Refresh Token, Please Login Again.");
+
+            userRefreshToken.RevokedOn = DateTime.UtcNow;
+
+            var newJwtToken = await CreateTokenAsync(user);
+
+            var newRawRefreshToken = GenerateSecureToken();
+            var newRefreshTokenHash = ComputeSha256Hash(newRawRefreshToken);
+
+            var newRefreshTokenEntity = new RefreshToken
+            {
+                TokenHash = newRefreshTokenHash,
+                ExpiresOn = DateTime.UtcNow.AddDays(_settings.RefreshTokenLifespanInDays),
+                CreatedOn = DateTime.UtcNow,
+            };
+
+            user.RefreshTokens.Add(newRefreshTokenEntity);
+            await _userManager.UpdateAsync(user);
+
+            return new RefreshTokenDTo
+            {
+                Token = newJwtToken,
+                RefreshToken = newRawRefreshToken,
+                RefreshTokenExpiration = newRefreshTokenEntity.ExpiresOn
+            };
+        }
+
+        private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+        {
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateAudience = true,
+                ValidAudience = _configuration["JWTSettings:Audience"],
+
+                ValidateIssuer = true,
+                ValidIssuer = _configuration["JWTSettings:Issuer"],
+
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWTSettings:Key"]!)),
+
+                ValidateLifetime = false // We want to get claims from expired token, so we don't validate lifetime
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+
+            var jwtSecurityToken = securityToken as JwtSecurityToken;
+            if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+            {
+                throw new SecurityTokenException("Invalid token algorithm");
+            }
+
+            return principal;
         }
     }
 }

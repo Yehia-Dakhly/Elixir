@@ -20,5 +20,6 @@ namespace DomainLayer.Optopns
         public int DaysToUpdateDeviceToken { get; set; }
         public int TokenLifespanInMinutes { get; set; }
         public int MaxBloodRequestsPerDay { get; set; }
+        public int RefreshTokenLifespanInDays { get; set; }
     }
 }

@@ -28,5 +28,6 @@ namespace DomainLayer.Models
         public DateTime LastTokenUpdate { get; set; }
         public string? ResetCode { get; set; }
         public DateTime? ExpireCodeTime { get; set; }
+        public ICollection<RefreshToken> RefreshTokens { get; set; } = new HashSet<RefreshToken>();
     }
 }
