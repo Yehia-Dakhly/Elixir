@@ -12,9 +12,9 @@ namespace DomainLayer.Models
     {
         public string TokenHash { get; set; } = null!;
         public DateTime ExpiresOn { get; set; }
-        public bool IsExpired => DateTime.UtcNow >= ExpiresOn;
         public DateTime CreatedOn { get; set; }
         public DateTime? RevokedOn { get; set; }
+        public bool IsExpired => DateTime.UtcNow >= ExpiresOn;
         public bool IsActive => RevokedOn == null && !IsExpired;
     }
 }

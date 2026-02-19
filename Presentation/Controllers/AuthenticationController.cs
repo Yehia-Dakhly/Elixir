@@ -67,7 +67,7 @@ namespace Presentation.Controllers
         }
 
         [HttpPost("refresh-token")]
-        public async Task<ActionResult<AuthUserDTo>> RefreshToken(RefreshTokenDTo refreshTokenDTo)
+        public async Task<ActionResult<NewRefreshTokenDTo>> RefreshToken(RefreshTokenDTo refreshTokenDTo)
         {
             return Ok(await _serviceManager.AuthenticationService.RefreshTokenAsync(refreshTokenDTo));
         }

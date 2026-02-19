@@ -24,6 +24,6 @@ namespace ServiceAbstraction
         Task ConfirmEmail(ConfirmEmailDTo confirmEmailDTo);
         Task<AuthUserDTo> GoogleLoginAsync(GoogleLoginDTo googleLoginDTo);
         public Task<bool> ChangePasswordAsync(ChangePasswordDTo changePasswordDTo);
-        public Task<RefreshTokenDTo> RefreshTokenAsync(RefreshTokenDTo model);
+        public Task<NewRefreshTokenDTo> RefreshTokenAsync(RefreshTokenDTo model);
     }
 }

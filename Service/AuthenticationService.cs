@@ -208,6 +208,7 @@ namespace Service
                 new Claim(ClaimTypes.Name, user.UserName!),
                 new Claim(ClaimTypes.Email, user.Email!),
                 new Claim("BloodTypeId", $"{user.BloodTypeId}"),
+                new Claim("ExpireDate", $"{DateTime.UtcNow.AddHours(double.Parse(_configuration["JWTSettings:ExpireDurationInHours"]!))}"),
                 //new Claim("CityId", $"{user.CityId}"),
                 //new Claim("Governorate", user.City.Governorate.NameAr)
             };
@@ -330,24 +331,25 @@ namespace Service
         }
         #endregion
 
-        public async Task<RefreshTokenDTo> RefreshTokenAsync(RefreshTokenDTo model)
+
+        public async Task<NewRefreshTokenDTo> RefreshTokenAsync(RefreshTokenDTo model)
         {
             var principal = GetPrincipalFromExpiredToken(model.Token);
-            if (principal == null) throw new Exception("Invalid Access Token");
+            if (principal == null) throw new ForbiddenException("رمز وصول غير صالح");
 
-            var email = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            var emailClaim = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email) ?? throw new UserNotFoundException("لا يوجد مستخدم بهذا البريد الإلكتروني!");
 
-            if (string.IsNullOrEmpty(email)) throw new Exception("Invalid Token Claims");
+            var email = emailClaim.Value;
 
             var user = await _userManager.FindByEmailAsync(email);
-            if (user == null) throw new Exception("User not found");
+            if (user == null) throw new UserNotFoundException(email);
 
             var incomingTokenHash = ComputeSha256Hash(model.RefreshToken);
 
             var userRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.TokenHash == incomingTokenHash);
 
             if (userRefreshToken == null || !userRefreshToken.IsActive)
-                throw new Exception("Invalid or Expired Refresh Token, Please Login Again.");
+                throw new ForbiddenException("رمز التحديث غير صالح أو منتهي الصلاحية، يرجى تسجيل الدخول مرة أخرى.");
 
             userRefreshToken.RevokedOn = DateTime.UtcNow;
 
@@ -366,38 +368,40 @@ namespace Service
             user.RefreshTokens.Add(newRefreshTokenEntity);
             await _userManager.UpdateAsync(user);
 
-            return new RefreshTokenDTo
+            return new NewRefreshTokenDTo
             {
                 Token = newJwtToken,
                 RefreshToken = newRawRefreshToken,
                 RefreshTokenExpiration = newRefreshTokenEntity.ExpiresOn
             };
         }
-
         private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
         {
             var tokenValidationParameters = new TokenValidationParameters
             {
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWTSettings:Key"]!)),
+
+                ValidateIssuer = false,
+                ValidIssuer = _configuration["JWTSettings:Issuer"],
+
                 ValidateAudience = true,
                 ValidAudience = _configuration["JWTSettings:Audience"],
 
-                ValidateIssuer = true,
-                ValidIssuer = _configuration["JWTSettings:Issuer"],
-
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWTSettings:Key"]!)),
-
                 ValidateLifetime = false // We want to get claims from expired token, so we don't validate lifetime
             };
-
+            //Console.WriteLine(_configuration["JWTSettings:Issuer"]);
+            //Console.WriteLine(_configuration["JWTSettings:Audience"]);
             var tokenHandler = new JwtSecurityTokenHandler();
-
+            //var jwtToken = tokenHandler.ReadJwtToken(token);
+            //Console.WriteLine("Token Issuer from JWT: " + jwtToken.Issuer);
+            //Console.WriteLine("Token Audience: " + jwtToken.Audiences.FirstOrDefault());
+            //Console.WriteLine("Token claims: " + string.Join(", ", jwtToken.Claims.Select(c => c.Type + "=" + c.Value)));
             var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
 
             var jwtSecurityToken = securityToken as JwtSecurityToken;
             if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
             {
-                throw new SecurityTokenException("Invalid token algorithm");
+                throw new SecurityTokenException("Invalid Token Claims");
             }
 
             return principal;
