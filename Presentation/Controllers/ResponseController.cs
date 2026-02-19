@@ -12,7 +12,7 @@ namespace Presentation.Controllers
     public class ResponseController(IServiceManager _serviceManager) : ApiBaseController
     {
         [HttpPost("respond")]
-        public async Task<ActionResult<bool>> RespondBloodRequest(int RequestId)
+        public async Task<ActionResult<RespondBloodRequestDTo>> RespondBloodRequest([FromQuery]int RequestId)
         {
             return Ok(await _serviceManager.ResponseService.RespondBloodRequestAsync(GetUserId(), RequestId));
         }

@@ -17,93 +17,100 @@ namespace Service.Consumers
     {
         public async Task Consume(ConsumeContext<BloodRequestCreatedEvent> context)
         {
+            #region Get Services
             using var Scope = _scopeFactory.CreateScope();
             var _compatibilityService = Scope.ServiceProvider.GetRequiredService<ICompatibilityService>();
             var _geoLocationService = Scope.ServiceProvider.GetRequiredService<IGeoLocationService>();
             var _unitOfWork = Scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
             var _bloodDonationSettings = Scope.ServiceProvider.GetRequiredService<IOptionsMonitor<BloodDonationSettings>>().CurrentValue;
-            var _firebaseNotificationService = Scope.ServiceProvider.GetRequiredService<IFirebaseNotificationService>();
+            var _firebaseNotificationService = Scope.ServiceProvider.GetRequiredService<IFirebaseNotificationService>(); 
+            #endregion
+
+            var Msg = context.Message;
+
             #region Get Compatible Donors IDs
-            var CompatibleBloodTypes = await _compatibilityService.GetCompatibleBloodTypesIdsForSpecificBloodTypeWithCategoryAsync(context.Message.RequiredBloodTypeId, context.Message.DonationCategoryId);
+            // Compatible Blood Types For Required Blood Type With Specific Donation Category, Because Some Blood Types Compatible With Other Blood Types Only In Specific Donation Category!
+            var CompatibleBloodTypes = await _compatibilityService.GetCompatibleBloodTypesIdsForSpecificBloodTypeWithCategoryAsync(Msg.RequiredBloodTypeId, Msg.DonationCategoryId);
             var CompatibleUsersIds = new List<string>();
             foreach (var type in CompatibleBloodTypes)
             {
-                CompatibleUsersIds.AddRange(await _geoLocationService.GetNearbyDonorsIdsAsync(context.Message.Longitude, context.Message.Latitude, $"{type}"));
+                CompatibleUsersIds.AddRange(await _geoLocationService.GetNearbyDonorsIdsAsync(Msg.Longitude, Msg.Latitude, $"{type}"));
             }
-            CompatibleUsersIds = CompatibleUsersIds.Distinct().ToList();
+            CompatibleUsersIds = CompatibleUsersIds.ToList();
             #endregion
 
             if (CompatibleUsersIds.Any())
             {
                 var NowDataTime = DateTime.UtcNow;
                 #region Add Notifications!
-                var NotificationsBase = new List<NotificationChild>();
-                var NotificationsChild = new List<NotificationBase>();
-                var ChildRepo = _unitOfWork.GetRepository<NotificationBase, long>();
+                var BaseRepo = _unitOfWork.GetRepository<NotificationBase, long>();
+
                 List<string> NewCompatibleUsersIds = new List<string>();
+
+                var Base = new NotificationBase()
+                {
+                    SendAt = NowDataTime,
+                    BloodRequestId = Msg.RequestId,
+                    Title = NotificationProperties.GetRequestTitle(Msg.BloodCategoryName, Msg.HospitalName),
+                    Body = NotificationProperties.GetRequestBody(Msg.PatientName, Msg.Description, Msg.CityName),
+                    Data = new Dictionary<string, string>()
+                        {
+                            { "requestId", $"{Msg.RequestId}" }
+                            // Add Action Here
+                        },
+                    NotificationType = NotificationType.NewBloodRequest,
+                    NotificationChilderns = new List<NotificationChild>(),
+                };
+                
                 foreach (var UserId in CompatibleUsersIds)
                 {
-                    if (UserId == context.Message.RequesterId)
+                    if (UserId == Msg.RequesterId)
                     {
                         continue;
                     }
                     NewCompatibleUsersIds.Add(UserId);
-                    var Child = new NotificationBase()
+                    Base.NotificationChilderns.Add(new NotificationChild()
                     {
-                        SendAt = NowDataTime,
-                        BloodRequestId = context.Message.RequestId,
-                        Title = NotificationProperties.GeneralTitle,
-                        Body = NotificationProperties.GetRequestBody(context.Message.BloodCategoryName, context.Message.CityName),
-                        Data = new Dictionary<string, string>()
-                        {
-                            // Add Action Here
-                            { "requestId", $"{context.Message.RequestId}" }
-                        },
-                    };
-                    NotificationsChild.Add(Child);
-
-                    NotificationsBase.Add(new NotificationChild()
-                    {
-                        NotificationBase = Child,
+                        NotificationBase = Base,
                         IsRead = false,
                         UserId = Guid.Parse(UserId)
                     });
                 }
-                var Repo = _unitOfWork.GetRepository<NotificationChild, long>();
-                await ChildRepo.AddRangeAsync(NotificationsChild);
-                await Repo.AddRangeAsync(NotificationsBase);
+                await BaseRepo.AddAsync(Base);
                 #endregion
-
                 await _unitOfWork.SaveChangesAsync();
 
-                #region Get Tokens From Redis And Send Notifications!
-                // Get Tokens From Redis
-                var UsersTokens = await _geoLocationService.GetDonorsTokensAsync(NewCompatibleUsersIds);
+                #region Get Tokens From Redis
+                var UsersTokens = await _geoLocationService.GetDonorsTokensAsync(NewCompatibleUsersIds); 
+                #endregion
+
                 if (UsersTokens is not null && UsersTokens.Any())
                 {
                     var MaxDonorsToNotify = _bloodDonationSettings.MaxDonorsToNotify;
-                    if (context.Message.IsDonorReported.HasValue && context.Message.IsDonorReported == true)
+                    if (Msg.IsDonorReported.HasValue && Msg.IsDonorReported == true) // Some Donor Dosen't Attend To Donation And Reported That, So We Need To Notify More Donors!
                     {
                         MaxDonorsToNotify = _bloodDonationSettings.MaxDonorsToSearchWhenAnoterDonorReported;
                     }
+
                     var UsersTokenToChunks = UsersTokens.Chunk(MaxDonorsToNotify);
-                    // Send Notifications!
+
+                    #region Send Notifications!
                     var UsersToNotify = UsersTokenToChunks.FirstOrDefault();
                     if (UsersToNotify is not null && UsersToNotify.Any())
                     {
                         await _firebaseNotificationService.SendToUsersAsync(UsersToNotify, new NotificationMessageDTo()
                         {
-                            Title = NotificationProperties.GeneralTitle,
-                            Body = NotificationProperties.GetRequestBody(context.Message.BloodCategoryName, context.Message.CityName),
+                            Title = NotificationProperties.GetRequestTitle(Msg.BloodCategoryName, Msg.HospitalName),
+                            Body = NotificationProperties.GetRequestBody(Msg.PatientName, Msg.Description, Msg.CityName),
                             Data = new Dictionary<string, string>()
                             {
-                                { "requestId", $"{context.Message.RequestId}" } 
+                                { "requestId", $"{Msg.RequestId}" } 
                                 // Data
                             }
                         });
-                    }
+                    } 
+                    #endregion
                 }
-                #endregion
             }
         }
     }

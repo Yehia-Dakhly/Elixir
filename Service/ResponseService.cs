@@ -72,14 +72,13 @@ namespace Service
             {
                 throw new BadRequestException(new List<string>() { "عفواً، لا يمكنك قبول الطلب لأنك بعيد جداً عن موقع الطلب" });
             }
-            var CompatibleBloodTypes = await _compatibilityService.GetCompatibleBloodTypesIdsForSpecificBloodTypeWithCategoryAsync(BloodRequest.RequiredBloodTypeId, BloodRequest.DonationCategoryId);
-            if (CompatibleBloodTypes.Contains(User.BloodTypeId))
+            var CompatibleBloodTypes = (await _compatibilityService.GetCompatibleBloodTypesIdsForSpecificBloodTypeWithCategoryAsync(BloodRequest.RequiredBloodTypeId, BloodRequest.DonationCategoryId)).ToList();
+            if (CompatibleBloodTypes.Any() && CompatibleBloodTypes.Contains(User.BloodTypeId))
             {
                 if (BloodRequest.ResponsesCount < BloodRequest.BagsCount && BloodRequest.Status != Status.Completed)
                 {
                     // Notify Requester!
                     DateTime ResponseTime = DateTime.UtcNow;
-                    
                     await _publishEndpoint.Publish(new ResponseRequestedEvent() // Publihser
                     {
                         RequesterId = $"{DonorId}",
@@ -90,8 +89,9 @@ namespace Service
                         Status = Status.Pending.ToString(),
                         BloodRequestId = BloodRequestId,
                         DonorId = DonorId,
+                        RequesterDeviceToken = BloodRequest.Requester.DeviceToken!,
                     });
-                    return new RespondBloodRequestDTo() { CanResponse = true };
+                    return new RespondBloodRequestDTo() { CanResponse = true, PhoneNumber = BloodRequest.PhoneNumber };
                 }
                 throw new ForbiddenException("تم اكتمال الردود على هذا الطلب");
             }
@@ -123,24 +123,26 @@ namespace Service
             {
                 BloodRequest.CollectedBags++;
                 Response.ResponseStatus = ResponseStatus.Arrived;   
+                await _unitOfWork.SaveChangesAsync();
                 if (BloodRequest.CollectedBags >= BloodRequest.BagsCount)
                 {
                     BloodRequest.Status = Status.Completed;
-                        await _publishEndpoint.Publish(new SendNotificationEvent()
+                    var Requester = await _userManager.FindByIdAsync(BloodRequest.RequesterId.ToString()) ?? throw new UserNotFoundException(RequesterId);
+                    await _publishEndpoint.Publish(new SendNotificationEvent()
                         {
-                            DeviceToken = Donor.DeviceToken!,
+                            DeviceToken = Requester.DeviceToken!,
                             BloodRequestId = BloodRequestId,
                             Title = NotificationProperties.RequestCompletedTitle,
                             Body = NotificationProperties.RequestCompletedBody,
+                            SendAt = DateTime.Now,
+                            UserId = RequesterId,
                             Data = new Dictionary<string, string>()
                             {
                                 // Date
                             },
-                            SendAt = DateTime.Now,
-                            UserId = RequesterId,
+                            NotificationType = (int)NotificationType.RequestCompleted,
                         });
                 }
-                await _unitOfWork.SaveChangesAsync();
 
                 await _publishEndpoint.Publish(new SendNotificationEvent()
                 {
@@ -150,10 +152,11 @@ namespace Service
                     DeviceToken = Donor.DeviceToken!,
                     SendAt = DateTime.UtcNow,
                     UserId = Donor.Id,
+                    NotificationType = (int)NotificationType.DonationConfirmed,
                     Data = new Dictionary<string, string>()
                     {
                         // Data
-                    }
+                    },
                 });
                 return new ConfirmRequestResponseDTo() { Success = true, Message = "تم تأكيد التبرع بنجاح" };
             }
@@ -182,21 +185,26 @@ namespace Service
                         Latitude = BloodRequest.Latitude,
                         Longitude = BloodRequest.Longitude,
                         RequestId = BloodRequest.Id,
-                        RequiredBloodTypeId = BloodRequest.RequiredBloodTypeId
+                        RequiredBloodTypeId = BloodRequest.RequiredBloodTypeId,
+                        Description = BloodRequest.Description,
+                        HospitalName = BloodRequest.HospitalName,
+                        PatientName = BloodRequest.PatientName,
+                        RequesterId = $"{BloodRequest.RequesterId}",
                     });
                     // Notify And Warn User!
                         await _publishEndpoint.Publish(new SendNotificationEvent()
                         {
                             BloodRequestId = BloodRequestId,
                             Title = NotificationProperties.DonationReportedTitle,
-                            Body = NotificationProperties.DonationReportedBody,
+                            Body = NotificationProperties.DonationReportedBody(BloodRequest.PatientName),
+                            DeviceToken = Donor.DeviceToken!,
+                            SendAt = DateTime.UtcNow,
+                            UserId = Donor.Id,
+                            NotificationType = (int)NotificationType.DonationReported,
                             Data = new Dictionary<string, string>()
                             {
                                 // Data
                             },
-                            DeviceToken = Donor.DeviceToken!,
-                            SendAt = DateTime.UtcNow,
-                            UserId = Donor.Id,
                         });
                     // Ask User If he donate or no, if he didn't Donate Then I'll - Remove - This Donation From Donation History!
                     return new ConfirmRequestResponseDTo { Success = true, Message = "تم تسجيل عدم الحضور وسيتم البحث عن متبرع آخر" }; ;

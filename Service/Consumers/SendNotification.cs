@@ -17,13 +17,16 @@ namespace Service.Consumers
     {
         public async Task Consume(ConsumeContext<SendNotificationEvent> context)
         {
+            #region Services
             var Scope = _scopeFactory.CreateScope();
             var _firebaseNotificationService = Scope.ServiceProvider.GetRequiredService<IFirebaseNotificationService>();
             var _unitOfWork = Scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-            var _NotificationBaseRepo = _unitOfWork.GetRepository<NotificationBase, long>();
-            var _NotificationChildRepo = _unitOfWork.GetRepository<NotificationChild, long>();
+            var _NotificationBaseRepo = _unitOfWork.GetRepository<NotificationBase, long>(); 
+            #endregion
+
             var Msg = context.Message;
 
+            #region Add Notifications!
             var Base = new NotificationBase()
             {
                 SendAt = Msg.SendAt,
@@ -31,16 +34,18 @@ namespace Service.Consumers
                 Title = Msg.Title,
                 Body = Msg.Body,
                 Data = Msg.Data,
+                NotificationType = (NotificationType)Msg.NotificationType,
+                NotificationChilderns = new List<NotificationChild>(),
             };
-            await _NotificationBaseRepo.AddAsync(Base);
-
-            await _NotificationChildRepo.AddAsync(new NotificationChild()
+            Base.NotificationChilderns.Add(new NotificationChild()
             {
                 NotificationBase = Base,
                 IsRead = false,
                 UserId = Msg.UserId
             });
-
+            await _NotificationBaseRepo.AddAsync(Base); 
+            #endregion
+            
             await _unitOfWork.SaveChangesAsync();
 
             if (Msg.DeviceToken is not null)

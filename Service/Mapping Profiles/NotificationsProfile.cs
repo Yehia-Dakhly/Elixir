@@ -18,7 +18,8 @@ namespace Service.Mapping_Profiles
                 .ForMember(N => N.Title, O => O.MapFrom(N => N.NotificationBase.Title))
                 .ForMember(N => N.BloodRequestId, O => O.MapFrom(N => N.NotificationBase.BloodRequestId))
                 .ForMember(N => N.Body, O => O.MapFrom(N => N.NotificationBase.Body))
-                .ForMember(N => N.Data, O => O.MapFrom(N => N.NotificationBase.Data));
+                .ForMember(N => N.Data, O => O.MapFrom(N => N.NotificationBase.Data))
+                .ForMember(N => N.NotificationType, O => O.MapFrom(N => N.NotificationBase.NotificationType));
         }
     }
 }

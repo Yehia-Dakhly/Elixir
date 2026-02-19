@@ -15,5 +15,6 @@ namespace Shared.Events
         public string Body { get; set; } = null!;
         public Dictionary<string, string> Data { get; set; } = null!;
         public string DeviceToken { get; set; } = null!;
+        public int NotificationType { get; set; }
     }
 }

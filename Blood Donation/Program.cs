@@ -197,7 +197,7 @@ namespace Blood_Donation
             // Default Providers
             builder.Services.Configure<DataProtectionTokenProviderOptions>(O => // Data Protector Token Provider
             {
-                O.TokenLifespan = TimeSpan.FromMinutes(builder.Configuration.GetValue<int>("Constants:TokenLifespanInMinutes"));
+                O.TokenLifespan = TimeSpan.FromMinutes(builder.Configuration.GetValue<int>("BloodDonationSettings:TokenLifespanInMinutes"));
             });
             builder.Services.AddIdentityCore<BloodDonationUser>(Options =>
                 {
@@ -258,9 +258,11 @@ namespace Blood_Donation
             // For Worker
             builder.Services.AddHostedService<RedisDataSeeder>();
             var app = builder.Build();
+            #region Data Seeding
             using var Scope = app.Services.CreateScope();
             var ObjectOfDataSeeding = Scope.ServiceProvider.GetRequiredService<IDataSeed>();
-            await ObjectOfDataSeeding.DataSeedAsync();
+            await ObjectOfDataSeeding.DataSeedAsync(); 
+            #endregion
 
             // Configure the HTTP request pipeline.
             app.UseMiddleware<ExceptionMiddleWare>();

@@ -12,15 +12,15 @@ using Persistence.Data;
 namespace Persistence.Data.Migrations
 {
     [DbContext(typeof(BloodDonationDbContext))]
-    [Migration("20260115185727_EditNotificationNamesUpdate")]
-    partial class EditNotificationNamesUpdate
+    [Migration("20260217234551_AddNotificationType")]
+    partial class AddNotificationType
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.22")
+                .HasAnnotation("ProductVersion", "8.0.23")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -308,11 +308,6 @@ namespace Persistence.Data.Migrations
                         .HasMaxLength(55)
                         .HasColumnType("nvarchar(55)");
 
-                    b.Property<string>("NameEn")
-                        .IsRequired()
-                        .HasMaxLength(55)
-                        .HasColumnType("nvarchar(55)");
-
                     b.HasKey("Id");
 
                     b.ToTable("DonationCategories", (string)null);
@@ -396,7 +391,7 @@ namespace Persistence.Data.Migrations
                     b.ToTable("Governorates", (string)null);
                 });
 
-            modelBuilder.Entity("DomainLayer.Models.", b =>
+            modelBuilder.Entity("DomainLayer.Models.NotificationBase", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -414,6 +409,9 @@ namespace Persistence.Data.Migrations
                     b.Property<string>("Data")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("NotificationType")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("SendAt")
                         .HasColumnType("datetime2");

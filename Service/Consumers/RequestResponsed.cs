@@ -14,12 +14,14 @@ namespace Service.Consumers
     {
         public async Task Consume(ConsumeContext<ResponseRequestedEvent> context)
         {
+            #region Services
             using var Scope = _serviceScopeFactory.CreateScope();
             var _fireBaseNotificationService = Scope.ServiceProvider.GetRequiredService<IFirebaseNotificationService>();
             var _unitOfWork = Scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
             var _publishEndpoint = Scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
             var _requestsUpdate = Scope.ServiceProvider.GetRequiredService<IRequestsUpdate>();
-            var Msg = context.Message;
+            var Msg = context.Message; 
+            #endregion
 
             #region Add Response
             var DonationResponsesRepo = _unitOfWork.GetRepository<DonationResponses, long>();
@@ -40,6 +42,7 @@ namespace Service.Consumers
             BloodRequestsRepo.Update(BloodRequest);
             #endregion
             await _requestsUpdate.UpdateRequestAsync(Msg.BloodRequestId, new { ResponsesCount = BloodRequest.ResponsesCount, CollectedCount = BloodRequest.CollectedBags });
+            
             #region Add Donation Response To History
             var DonationHistoryRepo = _unitOfWork.GetRepository<DonationHistory, long>();
             await DonationHistoryRepo.AddAsync(new DonationHistory()
@@ -50,30 +53,6 @@ namespace Service.Consumers
             });
             #endregion
 
-            #region Add Notification
-            var NotificationRepo = _unitOfWork.GetRepository<NotificationChild, long>();
-            DateTime SendAt = DateTime.UtcNow;
-            var NotificationChildRepo = _unitOfWork.GetRepository<NotificationBase, long>();
-            var Child = new NotificationBase()
-            {
-                BloodRequestId = context.Message.RequestId,
-                Title = NotificationProperties.DonorAcceptedTitle,
-                Body = NotificationProperties.DonorAcceptedBody(context.Message.DonorName),
-                SendAt = SendAt,
-                Data = new Dictionary<string, string>()
-                {
-                    // Add Action Here
-                    { "requestId", $"{Msg.RequestId}" }
-                },
-            };
-            await NotificationChildRepo.AddAsync(Child);
-            await NotificationRepo.AddAsync(new NotificationChild()
-            {
-                IsRead = false,
-                UserId = Guid.Parse(context.Message.RequesterId),
-                NotificationBase = Child
-            }); 
-            #endregion
 
             await _unitOfWork.SaveChangesAsync();
 
@@ -81,13 +60,17 @@ namespace Service.Consumers
             await _publishEndpoint.Publish(new SendNotificationEvent()
             {
                 Title = NotificationProperties.DonorAcceptedTitle,
-                Body = NotificationProperties.DonorAcceptedBody(context.Message.DonorName),
-                SendAt = SendAt,
+                Body = NotificationProperties.DonorAcceptedBody(Msg.DonorName, Msg.PhoneNumber),
+                SendAt = DateTime.UtcNow,
                 Data = new Dictionary<string, string>()
                 {
-                    // Add Action Here
                     { "requestId", $"{Msg.RequestId}" }
+                    // Add Action Here
                 },
+                DeviceToken = Msg.RequesterDeviceToken,
+                BloodRequestId = Msg.BloodRequestId,
+                NotificationType = (int)NotificationType.DonorAcceptedRequest,
+                UserId = Guid.Parse(Msg.RequesterId)
             });
             #endregion
         }

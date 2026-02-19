@@ -11,7 +11,6 @@ namespace Shared.DataTransferObjects
         public string FullName { get; set; } = null!;
         public string CityName { get; set; } = null!;
         public string Gender { get; set; } = null!;
-        public bool IsAvailable { get; set; }
         public string BloodType { get; set; } = null!;
         public string PhoneNumber { get; set; } = null!;
     }

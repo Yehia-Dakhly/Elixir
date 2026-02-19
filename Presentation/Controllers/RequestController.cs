@@ -9,7 +9,7 @@ namespace Presentation.Controllers
     public class RequestController(IServiceManager _serviceManager) : ApiBaseController
     {
         [HttpPost("create")]
-        public async Task<ActionResult<BloodRequestDTo>> CreateBloodRequest(CreateBloodRequestDTo createBloodRequest)
+        public async Task<ActionResult<bool>> CreateBloodRequest(CreateBloodRequestDTo createBloodRequest)
         {
             return Ok(await _serviceManager.RequestService.CreateBloodRequestAsync(createBloodRequest, GetUserId())); 
         }

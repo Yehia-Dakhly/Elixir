@@ -396,7 +396,7 @@ namespace Persistence.Data.Migrations
                     b.ToTable("Governorates", (string)null);
                 });
 
-            modelBuilder.Entity("DomainLayer.Models.NotificationBase", b =>
+            modelBuilder.Entity("DomainLayer.Models.", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()

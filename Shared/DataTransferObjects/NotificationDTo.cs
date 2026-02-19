@@ -10,5 +10,6 @@ namespace Shared.DataTransferObjects
         public DateTime CreatedAt { get; set; }
         public Dictionary<string, string> Data { get; set; } = null!;
         public bool IsRead { get; set; }
+        public int NotificationType { get; set; }
     }
 }

@@ -10,5 +10,9 @@ namespace ServiceAbstraction
     {
         Task<string?> GetAsync(string CacheKey);
         Task SetAsync(string CacheKey, object Value, TimeSpan TimeToLive);
+
+
+        public Task<T?> GetAsync<T>(string key);
+        Task SetAsync<T>(string key, T value, TimeSpan timeToLive);
     }
 }

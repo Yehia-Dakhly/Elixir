@@ -7,7 +7,6 @@ using DomainLayer.Optopns;
 using MassTransit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Service.Specifications;
 using ServiceAbstraction;
@@ -28,7 +27,7 @@ namespace Service
         IOptionsSnapshot<BloodDonationSettings> _optionsSnapshot
         ) : IRequestService
     {
-        public async Task<BloodRequestDTo> CreateBloodRequestAsync(CreateBloodRequestDTo bloodRequestDTo, Guid RequesterId)
+        public async Task<bool> CreateBloodRequestAsync(CreateBloodRequestDTo bloodRequestDTo, Guid RequesterId)
         {
             var Repo = _unitOfWork.GetRepository<BloodRequests, int>();
 
@@ -54,7 +53,7 @@ namespace Service
             Request.RequesterId = RequesterId;
 
             await Repo.AddAsync(Request);
-            await _unitOfWork.SaveChangesAsync();
+            var Result = await _unitOfWork.SaveChangesAsync();
             var Specification = new RequestWithRequesterBloodTypeDonationCategoryCity(Request.Id);
             var BloodRequest = await Repo.GetByIdAsync(Specification) ?? throw new BloodRequestNotFoundException(Request.Id);
             // RabbitMQ Consumer
@@ -69,11 +68,13 @@ namespace Service
                 DonationCategoryId = BloodRequest.DonationCategoryId,
                 RequiredBloodTypeId = BloodRequest.RequiredBloodTypeId,
                 IsDonorReported = false,
-                RequesterId = RequesterId.ToString()
+                RequesterId = RequesterId.ToString(),
+                Description = BloodRequest.Description,
+                PatientName = BloodRequest.PatientName,
+                HospitalName = BloodRequest.HospitalName,
             });
 
-            var MappedBloodRequest = _mapper.Map<BloodRequestDTo>(BloodRequest);
-            return MappedBloodRequest;
+            return Result > 0;
         }
         public async Task DeleteBloodRequestAsync(Guid RequesterId, int BloodRequestId)
         {
