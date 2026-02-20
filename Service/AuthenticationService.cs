@@ -384,7 +384,7 @@ namespace Service
                 ValidateIssuer = false,
                 ValidIssuer = _configuration["JWTSettings:Issuer"],
 
-                ValidateAudience = true,
+                ValidateAudience = false,
                 ValidAudience = _configuration["JWTSettings:Audience"],
 
                 ValidateLifetime = false // We want to get claims from expired token, so we don't validate lifetime

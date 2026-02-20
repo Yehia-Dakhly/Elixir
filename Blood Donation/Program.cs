@@ -39,7 +39,10 @@ namespace Blood_Donation
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddControllers();
-
+            #region API Key
+            var key = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(64));
+            Console.WriteLine(key); 
+            #endregion
             #region AddSwaggerService
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(Options =>
