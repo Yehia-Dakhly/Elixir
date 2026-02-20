@@ -40,9 +40,10 @@ namespace Blood_Donation
 
             builder.Services.AddControllers();
             #region API Key
-            var key = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(64));
-            Console.WriteLine(key); 
+            //var key = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(64));
+            //Console.WriteLine(key); 
             #endregion
+
             #region AddSwaggerService
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(Options =>
@@ -73,6 +74,7 @@ namespace Blood_Donation
                 });
             });
             #endregion
+
             builder.Services.AddHttpContextAccessor();
             #region DbContext - DB
             builder.Services.AddDbContext<BloodDonationDbContext>(Options =>
@@ -80,6 +82,7 @@ namespace Blood_Donation
                 Options.UseSqlServer(builder.Configuration["ConnectionStrings:DefaultConnection"]);
             });
             #endregion
+
             #region Services
             builder.Services.AddScoped<IDataSeed, DataSeed>();
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -132,30 +135,35 @@ namespace Blood_Donation
 
             builder.Services.AddSignalR();
             builder.Services.AddScoped<IRequestsUpdate, RequestsUpdateService>();
-            builder.Services.Configure<ApiBehaviorOptions>((options) =>
-            {
-                options.InvalidModelStateResponseFactory = (Context) =>
-                {
-                    var Errors = Context.ModelState.Where(M => M.Value.Errors.Any())
-                    .Select(M => new ValidationError()
-                    {
-                        Field = M.Key,
-                        Errors = M.Value.Errors.Select(E => E.ErrorMessage)
-                    });
-                    var Response = new ValidationErrorToReturn()
-                    {
-                        ValidationErrors = Errors
-                    };
-                    return new BadRequestObjectResult(Response);
-                };
-            });
             #endregion
+
+            #region Validation Errors Handling
+            builder.Services.Configure<ApiBehaviorOptions>((options) =>
+                {
+                    options.InvalidModelStateResponseFactory = (Context) =>
+                    {
+                        var Errors = Context.ModelState.Where(M => M.Value.Errors.Any())
+                        .Select(M => new ValidationError()
+                        {
+                            Field = M.Key,
+                            Errors = M.Value.Errors.Select(E => E.ErrorMessage)
+                        });
+                        var Response = new ValidationErrorToReturn()
+                        {
+                            Errors = Errors,
+                        };
+                        return new BadRequestObjectResult(Response);
+                    };
+                }); 
+            #endregion
+
             #region Redis
             builder.Services.AddSingleton<IConnectionMultiplexer>((_) =>
             {
                 return ConnectionMultiplexer.Connect(builder.Configuration["ConnectionStrings:RedisConnection"]!);
             });
             #endregion
+
             #region RabbitMQ
             builder.Services.AddMassTransit(conf =>
             {
@@ -196,6 +204,7 @@ namespace Blood_Donation
                 });
             });
             #endregion
+
             #region Auth
             // Default Providers
             builder.Services.Configure<DataProtectionTokenProviderOptions>(O => // Data Protector Token Provider
@@ -261,13 +270,13 @@ namespace Blood_Donation
             // For Worker
             builder.Services.AddHostedService<RedisDataSeeder>();
             var app = builder.Build();
+
             #region Data Seeding
             using var Scope = app.Services.CreateScope();
             var ObjectOfDataSeeding = Scope.ServiceProvider.GetRequiredService<IDataSeed>();
             await ObjectOfDataSeeding.DataSeedAsync(); 
             #endregion
 
-            // Configure the HTTP request pipeline.
             app.UseMiddleware<ExceptionMiddleWare>();
             //if (app.Environment.IsDevelopment())
             //{

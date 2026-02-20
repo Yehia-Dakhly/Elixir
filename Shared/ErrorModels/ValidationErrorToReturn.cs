@@ -1,9 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Shared.ErrorModels
 {
@@ -11,6 +6,6 @@ namespace Shared.ErrorModels
     {
         public int StatusCode { get; set; } = StatusCodes.Status400BadRequest;
         public string Message { get; set; } = "Validation Failed";
-        public IEnumerable<ValidationError> ValidationErrors { get; set; } = [];
+        public IEnumerable<ValidationError> Errors { get; set; } = [];
     }
 }
