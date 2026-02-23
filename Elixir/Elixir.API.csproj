@@ -24,12 +24,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Persistence\Persistence.csproj" />
-    <ProjectReference Include="..\Presentation\Presentation.csproj" />
+    <Folder Include="Controllers\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
+    <ProjectReference Include="..\Infrastructure\Persistence\Persistence.csproj" />
+    <ProjectReference Include="..\Infrastructure\Presentation\Presentation.csproj" />
   </ItemGroup>
 
   <ItemGroup>

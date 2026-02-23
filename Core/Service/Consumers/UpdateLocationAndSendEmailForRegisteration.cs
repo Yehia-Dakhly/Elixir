@@ -25,7 +25,7 @@ namespace Service.Consumers
     {
         public async Task Consume(ConsumeContext<UserRegisteredEvent> context)
         {
-            var Scope = _serviceScopeFactory.CreateScope();
+            using var Scope = _serviceScopeFactory.CreateScope();
             var _userManager = Scope.ServiceProvider.GetRequiredService<UserManager<BloodDonationUser>>();
             var Msg = context.Message;
             var NewUser = await _userManager.FindByIdAsync(Msg.UserId) ?? throw new UserNotFoundException(Msg.UserId);

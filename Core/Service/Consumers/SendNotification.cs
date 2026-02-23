@@ -18,7 +18,7 @@ namespace Service.Consumers
         public async Task Consume(ConsumeContext<SendNotificationEvent> context)
         {
             #region Services
-            var Scope = _scopeFactory.CreateScope();
+            using var Scope = _scopeFactory.CreateScope();
             var _firebaseNotificationService = Scope.ServiceProvider.GetRequiredService<IFirebaseNotificationService>();
             var _unitOfWork = Scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
             var _NotificationBaseRepo = _unitOfWork.GetRepository<NotificationBase, long>(); 
