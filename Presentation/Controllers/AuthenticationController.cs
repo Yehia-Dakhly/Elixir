@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Presentation.Attributes;
 using ServiceAbstraction;
 using Shared.DataTransferObjects.Authentication;
 using Shared.DataTransferObjects.Authentication.PasswordsAndOTPDTos;
@@ -48,6 +49,7 @@ namespace Presentation.Controllers
             return Ok(await _serviceManager.AuthenticationService.ResetPasswordAsync(resetPasswordDTo));
         }
         [HttpGet("confirm-email", Name = "confirm-email")]
+        [SkipApiKey]
         public async Task<IActionResult> ConfrimEmail(string Email, string Token)
         {
             try
@@ -61,6 +63,7 @@ namespace Presentation.Controllers
             }
         }
         [HttpPost("change-password")]
+        [Authorize]
         public async Task<ActionResult<bool>> ChangePasswordAsync(ChangePasswordDTo changePasswordDTo)
         {
             return Ok(await _serviceManager.AuthenticationService.ChangePasswordAsync(changePasswordDTo));

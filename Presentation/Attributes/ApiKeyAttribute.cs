@@ -15,6 +15,15 @@ namespace Presentation.Attributes
         private const string APIKEYNAME = "x-api-key";
         public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
+            var hasSkipAttribute = context.ActionDescriptor.EndpointMetadata
+                                          .Any(em => em.GetType() == typeof(SkipApiKeyAttribute));
+
+            if (hasSkipAttribute)
+            {
+                await next();
+                return;
+            }
+
             if (!context.HttpContext.Request.Headers.TryGetValue(APIKEYNAME, out var extractedApiKey))
             {
                 context.Result = new UnauthorizedObjectResult("API Key is missing!");
@@ -23,7 +32,7 @@ namespace Presentation.Attributes
 
             var configuration = context.HttpContext.RequestServices.GetRequiredService<IConfiguration>();
             var apiKey = configuration.GetValue<string>("ApiSettings:ApiKey");
-            //Console.WriteLine(apiKey);
+            Console.WriteLine(apiKey);
             if (!apiKey!.Equals(extractedApiKey))
             {
                 context.Result = new UnauthorizedObjectResult("Invalid API Key!");
