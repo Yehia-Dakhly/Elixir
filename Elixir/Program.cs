@@ -277,6 +277,7 @@ namespace Blood_Donation
                 #endregion
 
 
+
                 #region System Health
                 var healthChecksBuilder = builder.Services.AddHealthChecks()
                     .AddDbContextCheck<BloodDonationDbContext>(name: "SQL Database")
