@@ -102,6 +102,7 @@ namespace Blood_Donation
 
 
                 builder.Services.AddHttpContextAccessor();
+
                 #region DbContext - DB
                 builder.Services.AddDbContext<BloodDonationDbContext>(Options =>
                 {
@@ -178,6 +179,7 @@ namespace Blood_Donation
                             var Response = new ValidationErrorToReturn()
                             {
                                 Errors = Errors,
+                                Message = $"فشل التحقق من البيانات.\nمعرف الإرتباط: {Context.HttpContext.Items["CorrelationId"]}"
                             };
                             return new BadRequestObjectResult(Response);
                         };
@@ -276,26 +278,21 @@ namespace Blood_Donation
 
 
                 #region System Health
-                // 1. إضافة نظام الفحص الأساسي
                 var healthChecksBuilder = builder.Services.AddHealthChecks()
-                    // فحص قاعدة البيانات SQL
                     .AddDbContextCheck<BloodDonationDbContext>(name: "SQL Database")
-
-                    // فحص Redis (استخدم الكونكشن سترينج من الإعدادات)
                     .AddRedis(builder.Configuration["ConnectionStrings:RedisConnection"]!, name: "Redis Cache")
-
-                    // فحص RabbitMQ
                     .AddRabbitMQ(rabbitConnectionString: builder.Configuration["RabbitMQ:ConnectionString"]!, name: "Message Broker");
 
-                // 2. إضافة واجهة المستخدم الجاهزة (UI)
                 builder.Services.AddHealthChecksUI(setup =>
                 {
-                    setup.SetEvaluationTimeInSeconds(600); // يفحص كل 10 ثواني
-                    setup.MaximumHistoryEntriesPerEndpoint(60); // يحتفظ بآخر 60 قراءة
-                    setup.AddHealthCheckEndpoint("Elixir API System", "/health"); // الرابط اللي هيجيب منه الداتا
+                    setup.SetEvaluationTimeInSeconds(600);
+                    setup.MaximumHistoryEntriesPerEndpoint(60);
+                    setup.AddHealthCheckEndpoint("Elixir API System", "/health");
                 })
-                .AddInMemoryStorage(); // تخزين مؤقت للحالة في الرامات (ممكن تخليه SQL لو عايز هيستوري طويل)
+                .AddInMemoryStorage();
                 #endregion
+
+
 
                 // For Options Patterns
                 builder.Services.Configure<BloodDonationSettings>(builder.Configuration.GetSection("BloodDonationSettings"));
@@ -309,33 +306,25 @@ namespace Blood_Donation
                 await ObjectOfDataSeeding.DataSeedAsync();
                 #endregion
 
-
+                app.UseMiddleware<CorrelationalIdMiddleWare>();
                 app.UseMiddleware<ExceptionMiddleWare>();
-                //if (app.Environment.IsDevelopment())
-                //{
                 app.UseSwagger();
                 app.UseSwaggerUI();
-                //}
-
                 app.UseSerilogRequestLogging();
                 app.UseHttpsRedirection();
                 app.UseAuthentication();
                 app.UseAuthorization();
 
                 #region Health System Endpoints
-                // ضيف الجزء ده هنا (منطقة الـ Endpoints
-
-                // 1. رابط الداتا (JSON) اللي بيكلم الماكينات
                 app.MapHealthChecks("/health", new HealthCheckOptions
                 {
                     Predicate = _ => true,
-                    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse // ⚠️ محتاج مكتبة UI.Client
+                    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse // UI.Client
                 });
-
-                // 2. رابط الشاشة الملونة (Dashboard)
+                // Dashboard
                 app.MapHealthChecksUI(options =>
                 {
-                    options.UIPath = "/dashboard"; // ده الرابط اللي هتفتح منه
+                    options.UIPath = "/dashboard";
                 });
                 #endregion
 

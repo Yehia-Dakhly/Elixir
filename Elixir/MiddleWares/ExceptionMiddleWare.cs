@@ -2,6 +2,7 @@
 using DomainLayer.Exceptions.NotFoundExceptions;
 using k8s.KubeConfigModels;
 using Shared.ErrorModels;
+using System.Text;
 using System.Text.Json;
 
 namespace Blood_Donation.MiddleWares
@@ -40,11 +41,14 @@ namespace Blood_Donation.MiddleWares
             }
             catch (Exception ex)
             {
+                var CorrelationId = HttpContext.Items["CorrelationId"] ?? "معرف الارتباط غير متاح";
                 // Response Object
+                StringBuilder Msg = new StringBuilder();
+                Msg.Append(ex.Message).Append("\n").Append("معرف الارتباط: ").Append(CorrelationId);
                 var Response = new ErrorToReturn()
                 {
                     //StatusCode = HttpContext.Response.StatusCode,
-                    ErrorMessage = ex.Message
+                    ErrorMessage = Msg.ToString()
                 };
                 // Set Status Code For Response
                 HttpContext.Response.StatusCode = ex switch
@@ -60,12 +64,12 @@ namespace Blood_Donation.MiddleWares
                 {
                     logger.LogError(ex, "A critical Server Error Occurred While Processing Request To {RequestPath}", HttpContext.Request.Path);
                     // Security
-                    Response.ErrorMessage = "An unexpected internal server error occurred. Please try again later.";
+                    Response.ErrorMessage = $"حدث خطأ داخلي غير متوقع في الخادم. يرجى المحاولة مرة أخرى لاحقاً.\nمعرف الارتباط: {CorrelationId}";
                 }
                 else
                 {
                     logger.LogWarning(ex, "A Client Error ({StatusCode}) Occurred While Processing Request To {RequestPath}", HttpContext.Response.StatusCode, HttpContext.Request.Path);
-                    Response.ErrorMessage = ex.Message;
+                    Response.ErrorMessage = Msg.ToString();
                 }
                 Response.StatusCode = HttpContext.Response.StatusCode;
                 // Return Object As Json && Set Content Type For Response As Json
