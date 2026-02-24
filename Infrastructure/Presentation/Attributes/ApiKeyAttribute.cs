@@ -32,7 +32,6 @@ namespace Presentation.Attributes
 
             var configuration = context.HttpContext.RequestServices.GetRequiredService<IConfiguration>();
             var apiKey = configuration.GetValue<string>("ApiSettings:ApiKey");
-            Console.WriteLine(apiKey);
             if (!apiKey!.Equals(extractedApiKey))
             {
                 context.Result = new UnauthorizedObjectResult("Invalid API Key!");

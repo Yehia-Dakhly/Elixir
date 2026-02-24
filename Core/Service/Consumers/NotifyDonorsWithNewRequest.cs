@@ -4,6 +4,7 @@ using DomainLayer.Optopns;
 using MassTransit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ServiceAbstraction;
 using Shared.DataTransferObjects;
@@ -12,7 +13,8 @@ using Shared.Events;
 namespace Service.Consumers
 {
     public class NotifyDonorsWithNewRequest(
-        IServiceScopeFactory _scopeFactory
+        IServiceScopeFactory _scopeFactory,
+        ILogger<NotifyDonorsWithNewRequest> _logger
         ) : IConsumer<BloodRequestCreatedEvent>
     {
         public async Task Consume(ConsumeContext<BloodRequestCreatedEvent> context)
@@ -27,6 +29,7 @@ namespace Service.Consumers
             #endregion
 
             var Msg = context.Message;
+            _logger.LogInformation("Received BloodRequestCreatedEvent for RequestId: {RequestId}", Msg.RequestId);
 
             #region Get Compatible Donors IDs
             // Compatible Blood Types For Required Blood Type With Specific Donation Category, Because Some Blood Types Compatible With Other Blood Types Only In Specific Donation Category!
@@ -34,13 +37,16 @@ namespace Service.Consumers
             var CompatibleUsersIds = new List<string>();
             foreach (var type in CompatibleBloodTypes)
             {
-                CompatibleUsersIds.AddRange(await _geoLocationService.GetNearbyDonorsIdsAsync(Msg.Longitude, Msg.Latitude, $"{type}"));
+                var found = await _geoLocationService.GetNearbyDonorsIdsAsync(Msg.Longitude, Msg.Latitude, $"{type}");
+                _logger.LogInformation("Found {CompatibleUsersCountInBloodType} compatible donors for BloodTypeId: {BloodTypeId} To RequestId: {RequestId}", found.Count(), type, Msg.RequestId);
+                CompatibleUsersIds.AddRange(found);
             }
             CompatibleUsersIds = CompatibleUsersIds.ToList();
             #endregion
 
             if (CompatibleUsersIds.Any())
             {
+                _logger.LogInformation("Found Total {TotalCompatibleUsers} compatible donors for RequestId: {RequestId}", CompatibleUsersIds.Count, Msg.RequestId);
                 var NowDataTime = DateTime.UtcNow;
                 #region Add Notifications!
                 var BaseRepo = _unitOfWork.GetRepository<NotificationBase, long>();
@@ -89,9 +95,10 @@ namespace Service.Consumers
                     var MaxDonorsToNotify = _bloodDonationSettings.MaxDonorsToNotify;
                     if (Msg.IsDonorReported.HasValue && Msg.IsDonorReported == true) // Some Donor Dosen't Attend To Donation And Reported That, So We Need To Notify More Donors!
                     {
+                        _logger.LogInformation("Donor Reported For RequestId: {RequestId}, Notifying More Donors!", Msg.RequestId);
                         MaxDonorsToNotify = _bloodDonationSettings.MaxDonorsToSearchWhenAnoterDonorReported;
                     }
-
+                    _logger.LogInformation("Notifying {DonorsCount} donors for RequestId: {RequestId}", UsersTokens.Count, Msg.RequestId);
                     var UsersTokenToChunks = UsersTokens.Chunk(MaxDonorsToNotify);
 
                     #region Send Notifications!

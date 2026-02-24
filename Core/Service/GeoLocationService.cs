@@ -4,6 +4,7 @@ using DomainLayer.Models;
 using DomainLayer.Optopns;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Service.Specifications;
 using ServiceAbstraction;
@@ -16,8 +17,8 @@ namespace Service
 {
     public class GeoLocationService(
         IConnectionMultiplexer _connectionMultiplexer,
-        //IConfiguration _configuration,
         IOptionsSnapshot<BloodDonationSettings> _optionsSnapshot,
+        ILogger<GeoLocationService> _logger,
         IUnitOfWork _unitOfWork,
         UserManager<BloodDonationUser> _userManager
         ) : IGeoLocationService
@@ -26,13 +27,17 @@ namespace Service
         private readonly BloodDonationSettings _bloodDonationSettings = _optionsSnapshot.Value;
         public async Task<IEnumerable<string>> GetNearbyDonorsIdsAsync(double Longitude, double Latitude, string BloodTypeId)
         {
+            _logger.LogInformation("Getting nearby donors for BloodTypeId: {BloodTypeId} from Redis", BloodTypeId);
             string key = $"geo:donors:{BloodTypeId}";
 
             var Donors = await GetDonorsInRadiusAsync(key, Longitude, Latitude, _bloodDonationSettings.CityRadius);
+            _logger.LogInformation("Found {DonorsCount} donors in city radius for BloodTypeId: {BloodTypeId}", Donors.Length, BloodTypeId);
             if (Donors.Length < _bloodDonationSettings.MinDonorsCount)
             {
+                _logger.LogInformation("Found less than {MinDonorsCount} donors in city radius for BloodTypeId: {BloodTypeId}. Expanding search to governorate radius.", _bloodDonationSettings.MinDonorsCount, BloodTypeId);
                 Donors = await GetDonorsInRadiusAsync(key, Longitude, Latitude, _bloodDonationSettings.GovernorateRadius);
             }
+            _logger.LogInformation("Found {DonorsCount} donors for BloodTypeId: {BloodTypeId}", Donors.Length, BloodTypeId);
             return Donors.Select(R => R.Member.ToString()).ToList();
         }
         private async Task<GeoRadiusResult[]> GetDonorsInRadiusAsync(string key, double longitude, double latitude, double Radius)
@@ -41,6 +46,7 @@ namespace Service
         }
         public async Task UpdateDonorLocationAndDeviceTokenAsync(string UserId, string DeviceToken, double Longitude, double Latitude, string BloodTypeId)
         {
+            _logger.LogInformation("Updating location and device token for user {UserId} In Redis", UserId);
             string key = $"geo:donors:{BloodTypeId}";
             await _database.GeoAddAsync(key, new GeoEntry(Longitude, Latitude, UserId));
             var User = await _userManager.FindByIdAsync(UserId);
@@ -56,6 +62,7 @@ namespace Service
         }
         public async Task<List<string>> GetDonorsTokensAsync(List<string> UsersIds)
         {
+            _logger.LogInformation("Start getting device tokensfrom Redis");
             var Batch = _database.CreateBatch();
             var Tasks = new List<Task<RedisValue>>();
             foreach (var UserId in UsersIds)
@@ -84,6 +91,7 @@ namespace Service
             
             Batch.Execute();
             var Results = await Task.WhenAll(Tasks);
+            _logger.LogInformation("Finished getting device {TokensCount} tokens from Redis", Results.Length);
             return Results.Where(R => R.HasValue && !R.IsNullOrEmpty)
                 .Select(R => R.ToString())
                 .ToList();

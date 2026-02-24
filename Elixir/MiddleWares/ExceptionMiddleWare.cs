@@ -1,5 +1,6 @@
 ﻿using DomainLayer.Exceptions;
 using DomainLayer.Exceptions.NotFoundExceptions;
+using k8s.KubeConfigModels;
 using Shared.ErrorModels;
 using System.Text.Json;
 
@@ -32,13 +33,13 @@ namespace Blood_Donation.MiddleWares
                         StatusCode = StatusCodes.Status404NotFound,
                         ErrorMessage = $"Endpoint {HttpContext.Request.Path} is Not Found!"
                     };
+                    logger.LogWarning("Endpoint {RequestPath} is Not Found!", HttpContext.Request.Path);
                     await HttpContext.Response.WriteAsJsonAsync(Response);
                 }
 
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Something Went Wrong!");
                 // Response Object
                 var Response = new ErrorToReturn()
                 {
@@ -55,6 +56,17 @@ namespace Blood_Donation.MiddleWares
                     _ => StatusCodes.Status500InternalServerError
                 };
 
+                if (HttpContext.Response.StatusCode == StatusCodes.Status500InternalServerError)
+                {
+                    logger.LogError(ex, "A critical Server Error Occurred While Processing Request To {RequestPath}", HttpContext.Request.Path);
+                    // Security
+                    Response.ErrorMessage = "An unexpected internal server error occurred. Please try again later.";
+                }
+                else
+                {
+                    logger.LogWarning(ex, "A Client Error ({StatusCode}) Occurred While Processing Request To {RequestPath}", HttpContext.Response.StatusCode, HttpContext.Request.Path);
+                    Response.ErrorMessage = ex.Message;
+                }
                 Response.StatusCode = HttpContext.Response.StatusCode;
                 // Return Object As Json && Set Content Type For Response As Json
                 await HttpContext.Response.WriteAsJsonAsync(Response);

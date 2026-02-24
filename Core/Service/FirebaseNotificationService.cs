@@ -1,6 +1,7 @@
 ﻿using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
+using Microsoft.Extensions.Logging;
 using ServiceAbstraction;
 using Shared.DataTransferObjects;
 
@@ -8,7 +9,9 @@ namespace Service
 {
     public class FirebaseNotificationService : IFirebaseNotificationService
     {
-        public FirebaseNotificationService()
+        private readonly ILogger<FirebaseNotificationService> _logger;
+
+        public FirebaseNotificationService(ILogger<FirebaseNotificationService> logger)
         {
             if (FirebaseApp.DefaultInstance is null)
             {
@@ -17,6 +20,8 @@ namespace Service
                     Credential = GoogleCredential.FromFile(Path.Combine(AppContext.BaseDirectory, "elixir-firebase-adminsdk.json"))
                 });
             }
+
+            _logger = logger;
         }
 
         public async Task<bool> SendToUserAsync(string UserToken, NotificationMessageDTo NotificationMessage)
@@ -40,10 +45,12 @@ namespace Service
             }
             catch (FirebaseMessagingException ex)
             {
+                _logger.LogWarning(ex, $"Failed to send notification to user with token: {UserToken}");
                 return false;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, $"An unexpected error occurred while sending notification to user with token: {UserToken}");
                 return false;
             }
         }
@@ -51,7 +58,10 @@ namespace Service
         public async Task<bool> SendToUsersAsync(IEnumerable<string> UserTokens, NotificationMessageDTo NotificationMessage)
         {
             if (!UserTokens.Any())
+            {
+                _logger.LogWarning("No user tokens provided for sending notifications.");
                 return false;
+            }
 
             var Batches = UserTokens.Chunk(500);
             bool LeastOneBatchSent = false;
@@ -73,16 +83,19 @@ namespace Service
 
                     if(Response.FailureCount > 0)
                     {
+                        _logger.LogWarning("Failed to send notification to {FailureCount} devices.", Response.FailureCount);
                         // Log
-                         //Console.WriteLine($"Failed to send to {Response.FailureCount} devices.");
+                        //Console.WriteLine($"Failed to send to {Response.FailureCount} devices.");
                     }
                     if (Response.SuccessCount > 0)
                     {
+                        _logger.LogInformation("Successfully sent notification to {SuccessCount} devices.", Response.SuccessCount);
                         LeastOneBatchSent = true; // Log
                     }
                 }
                 catch (Exception ex)
                 {
+                    _logger.LogError(ex, "An unexpected error occurred while sending notifications to a batch of users.");
                     continue;
                 }
             }

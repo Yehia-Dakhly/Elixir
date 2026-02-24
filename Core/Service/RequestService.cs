@@ -7,6 +7,7 @@ using DomainLayer.Optopns;
 using MassTransit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Service.Specifications;
 using ServiceAbstraction;
@@ -24,7 +25,8 @@ namespace Service
         IPublishEndpoint _publishEndpoint,
         IHttpContextAccessor _httpContextAccessor,
         ICompatibilityService _compatibilityService,
-        IOptionsSnapshot<BloodDonationSettings> _optionsSnapshot
+        IOptionsSnapshot<BloodDonationSettings> _optionsSnapshot,
+        ILogger<RequestService> _logger
         ) : IRequestService
     {
         public async Task<bool> CreateBloodRequestAsync(CreateBloodRequestDTo bloodRequestDTo, Guid RequesterId)
@@ -34,16 +36,22 @@ namespace Service
             //var OpenRequestsSpecification = new OpenRequestsForUserSpecification(RequesterId);
             //var HasActiveRequest = await Repo.GetAllAsync(OpenRequestsSpecification);
             //if (HasActiveRequest.Any())
+            //{
+            //    _logger.LogWarning("User {UserId} attempted to create a new blood request but already has an open request with id {RequestId}", RequesterId, HasActiveRequest.First().Id);
             //    throw new BadRequestException(new List<string>() { "لديك طلب مفتوح بالفعل." });
+            //}
 
             var AllTodaySpecification = new AllCreatedRequestsTodaySpecification(RequesterId);
             var TodayRequests = await Repo.GetAllAsync(AllTodaySpecification);
             if (TodayRequests.Count() >= _optionsSnapshot.Value.MaxBloodRequestsPerDay)
+            {
+                _logger.LogWarning("User {UserId} has reached the daily limit of blood requests with {RequestCount} requests today", RequesterId, TodayRequests.Count());
                 throw new BadRequestException(new List<string>() { $"تجاوزت الحد الأقصى للطلبات اليومية ({_optionsSnapshot.Value.MaxBloodRequestsPerDay} طلبات). حاول غداً." });
-
+            }
 
             if (bloodRequestDTo.Deadline <= DateTime.UtcNow)
             {
+                _logger.LogWarning("User {UserId} attempted to create a blood request with a past deadline: {Deadline}", RequesterId, bloodRequestDTo.Deadline);
                 throw new BadRequestException(new List<string>() { "الموعد النهائي يجب أن يكون في المستقبل" });
             }
             var Request = _mapper.Map<BloodRequests>(bloodRequestDTo);
@@ -73,7 +81,7 @@ namespace Service
                 PatientName = BloodRequest.PatientName,
                 HospitalName = BloodRequest.HospitalName,
             });
-
+            _logger.LogInformation("User {UserId} created a new blood request with id {RequestId}", RequesterId, Request.Id);
             return Result > 0;
         }
         public async Task DeleteBloodRequestAsync(Guid RequesterId, int BloodRequestId)
@@ -82,17 +90,21 @@ namespace Service
             var BloodRequest = await BRepo.GetByIdAsync(BloodRequestId);
             if (BloodRequest is null)
             {
+                _logger.LogWarning("User {UserId} attempted to delete blood request with id {RequestId} but it was not found", RequesterId, BloodRequestId);
                 throw new BloodRequestNotFoundException(BloodRequestId);
             }
             if (BloodRequest.RequesterId != RequesterId)
             {
+                _logger.LogWarning("User {UserId} attempted to delete blood request with id {RequestId} but is not the owner", RequesterId, BloodRequestId);
                 throw new UnauthorizedException("غير مصرح بك لحذف هذا الطلب!");
             }
             if (BloodRequest.ResponsesCount > 0)
             {
+                _logger.LogWarning("User {UserId} attempted to delete blood request with id {RequestId} but it has responses", RequesterId, BloodRequestId);
                 throw new ForbiddenException("لا يمكن حذف طلب عليه استجابات بالفعل. يمكنك إغلاقه بدلاً من حذفه.");
             }
             BRepo.Delete(BloodRequest);
+            _logger.LogInformation("User {UserId} deleted blood request with id {RequestId}", RequesterId, BloodRequestId);
             await _unitOfWork.SaveChangesAsync();
         }
         public async Task<PaginatedResult<BloodRequestDTo>> GetRequestsAsync(RequestQueryParams Params)
@@ -152,16 +164,22 @@ namespace Service
             var Repo = _unitOfWork.GetRepository<BloodRequests, int>();
             var Request = await Repo.GetByIdAsync(RequestId) ?? throw new BloodRequestNotFoundException(RequestId);
             if (Request.RequesterId != RequesterId)
+            {
+                _logger.LogWarning("User {UserId} attempted to close blood request with id {RequestId} but is not the owner", RequesterId, RequestId);
                 throw new UnauthorizedException("غير مسموح لك بقفل هذا الطلب");
+            }
             if (Request.Status == Status.Completed)
             {
+                _logger.LogWarning("User {UserId} attempted to close blood request with id {RequestId} but it is already completed", RequesterId, RequestId);
                 throw new ForbiddenException("لقد تم اكتمال هذا الطلب لا يمكنك غلقه");
             }
             if (Request.Status == Status.Closed)
             {
+                _logger.LogWarning("User {UserId} attempted to close blood request with id {RequestId} but it is already closed", RequesterId, RequestId);
                 throw new ForbiddenException("تم غلق هذا الطلب من قبل");
             }
             Request.Status = Status.Closed;
+            _logger.LogInformation("User {UserId} closed blood request with id {RequestId}", RequesterId, RequestId);
             await _unitOfWork.SaveChangesAsync();
         }
         DateTime GetEgyptTime()

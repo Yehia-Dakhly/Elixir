@@ -2,6 +2,7 @@
 using DomainLayer.Models;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ServiceAbstraction;
 using Shared.Events;
 using System;
@@ -13,7 +14,10 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace Service.Consumers
 {
-    public class SendNotification(IServiceScopeFactory _scopeFactory) : IConsumer<SendNotificationEvent>
+    public class SendNotification(
+        IServiceScopeFactory _scopeFactory,
+        ILogger<SendNotification> _logger
+        ) : IConsumer<SendNotificationEvent>
     {
         public async Task Consume(ConsumeContext<SendNotificationEvent> context)
         {
@@ -25,6 +29,7 @@ namespace Service.Consumers
             #endregion
 
             var Msg = context.Message;
+            _logger.LogInformation($"Received SendNotificationEvent for UserId: {Msg.UserId} with Title: {Msg.Title}");
 
             #region Add Notifications!
             var Base = new NotificationBase()
@@ -50,6 +55,7 @@ namespace Service.Consumers
 
             if (Msg.DeviceToken is not null)
             {
+                _logger.LogInformation($"Sending notification to UserId: {Msg.UserId}.");
                 await _firebaseNotificationService.SendToUserAsync(Msg.DeviceToken, new Shared.DataTransferObjects.NotificationMessageDTo()
                 {
                     Title = Msg.Title,

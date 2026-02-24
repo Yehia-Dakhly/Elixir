@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ServiceAbstraction;
 using Shared.Events;
 using System;
@@ -19,12 +20,13 @@ namespace Service.Consumers
 {
     public class UpdateLocationAndSendEmailForRegisteration(
         IServiceScopeFactory _serviceScopeFactory,
-
+        ILogger<UpdateLocationAndSendEmailForRegisteration> _logger,
         IPublishEndpoint _publishEndpoint
         ) : IConsumer<UserRegisteredEvent>
     {
         public async Task Consume(ConsumeContext<UserRegisteredEvent> context)
         {
+            _logger.LogInformation("Received UserRegisteredEvent for UserId: {UserId}", context.Message.UserId);
             using var Scope = _serviceScopeFactory.CreateScope();
             var _userManager = Scope.ServiceProvider.GetRequiredService<UserManager<BloodDonationUser>>();
             var Msg = context.Message;

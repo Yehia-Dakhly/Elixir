@@ -5,12 +5,16 @@ using DomainLayer.Models;
 using MassTransit;
 using MassTransit.Transports;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ServiceAbstraction;
 using Shared.Events;
 
 namespace Service.Consumers
 {
-    public class RequestResponsed(IServiceScopeFactory _serviceScopeFactory) : IConsumer<ResponseRequestedEvent>
+    public class RequestResponsed(
+        IServiceScopeFactory _serviceScopeFactory,
+        ILogger<RequestResponsed> _logger
+        ) : IConsumer<ResponseRequestedEvent>
     {
         public async Task Consume(ConsumeContext<ResponseRequestedEvent> context)
         {
@@ -20,8 +24,9 @@ namespace Service.Consumers
             var _unitOfWork = Scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
             var _publishEndpoint = Scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
             var _requestsUpdate = Scope.ServiceProvider.GetRequiredService<IRequestsUpdate>();
-            var Msg = context.Message; 
             #endregion
+            var Msg = context.Message; 
+            _logger.LogInformation("Received ResponseRequestedEvent for RequestId: {RequestId} from DonorId: {DonorId}", Msg.RequestId, Msg.DonorId);
 
             #region Add Response
             var DonationResponsesRepo = _unitOfWork.GetRepository<DonationResponses, long>();
@@ -40,6 +45,7 @@ namespace Service.Consumers
             var BloodRequest = await BloodRequestsRepo.GetByIdAsync(Msg.BloodRequestId) ?? throw new BloodRequestNotFoundException(Msg.BloodRequestId);
             BloodRequest.ResponsesCount++;
             BloodRequestsRepo.Update(BloodRequest);
+            _logger.LogInformation("Updated BloodRequest with Id: {BloodRequestId} - New ResponsesCount: {ResponsesCount}", Msg.BloodRequestId, BloodRequest.ResponsesCount);
             #endregion
 
             await _requestsUpdate.UpdateRequestAsync(Msg.BloodRequestId, new { ResponsesCount = BloodRequest.ResponsesCount, CollectedCount = BloodRequest.CollectedBags });
@@ -52,6 +58,7 @@ namespace Service.Consumers
                 DonorId = Msg.DonorId,
                 DonationDate = DateTime.UtcNow
             });
+            _logger.LogInformation("Added DonationHistory for DonorId: {DonorId} and BloodRequestId: {BloodRequestId}", Msg.DonorId, Msg.BloodRequestId);
             #endregion
 
 

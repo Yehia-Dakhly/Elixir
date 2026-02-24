@@ -3,6 +3,7 @@ using DomainLayer.Contracts;
 using DomainLayer.Exceptions;
 using DomainLayer.Exceptions.NotFoundExceptions;
 using DomainLayer.Models;
+using Microsoft.Extensions.Logging;
 using Service.Specifications;
 using ServiceAbstraction;
 using Shared;
@@ -17,7 +18,8 @@ namespace Service
 {
     public class NotificationService(
         IUnitOfWork _unitOfWork,
-        IMapper _mapper
+        IMapper _mapper,
+        ILogger<NotificationService> _logger
         ) : INotificationService
     {
         public async Task<PaginatedResult<NotificationDTo>> GetAllNotificationAsync(NotificationQueryParams Params, Guid UserId)
@@ -65,6 +67,7 @@ namespace Service
             }
             else
             {
+                _logger.LogWarning("User with id {UserId} tried to read notification with id {NotificationId} that does not belong to them", UserId, NotificationId);   
                 throw new ForbiddenException("غير مسموح لك بقراءة هذا الإشعار");
             }
         }

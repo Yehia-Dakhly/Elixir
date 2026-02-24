@@ -6,6 +6,7 @@ using DomainLayer.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Service.Specifications;
 using ServiceAbstraction;
 using Shared;
@@ -19,7 +20,7 @@ namespace Service
     public class AccountService(
         UserManager<BloodDonationUser> _userManager,
         IMapper _mapper,
-        IHttpContextAccessor httpContextAccessor,
+        ILogger<AccountService> _logger,
         IGeoLocationService _geoLocationService,
         IUnitOfWork _unitOfWork
         ) : IAccountService
@@ -32,12 +33,23 @@ namespace Service
         public async Task UpdateAccountProfileAsync(UpdateAccountDTo updateAccountDTo, string UserId)
         {
             var User = await _userManager.FindByIdAsync(UserId) ?? throw new UserNotFoundException(UserId);
+            var OldPhoneNumber = User.PhoneNumber;
             User.PhoneNumber = updateAccountDTo.PhoneNumber;
             User.CityId = updateAccountDTo.CityId;
-            await _userManager.UpdateAsync(User);
+            var Result = await _userManager.UpdateAsync(User);
+            if (Result.Succeeded)
+            {
+                _logger.LogInformation("User {UserId} updated their phone number", UserId);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to update user {UserId} profile. Errors: {Errors}", UserId, string.Join(", ", Result.Errors.Select(E => E.Description)));
+                throw new BadRequestException(Result.Errors.Select(E => E.Description).ToList());
+            }
         }
         public async Task RefreshDeviceTokenAndLocationAsync(UpdateDeviceTokenAndLoccationDTo updateDeviceTokenAndLoccationDTo, string UserId)
         {
+            _logger.LogInformation("User {UserId} is refreshing their device token and location.", UserId);
             var User = await _userManager.FindByIdAsync(UserId) ?? throw new UserNotFoundException(UserId);
             User.Longitude = updateDeviceTokenAndLoccationDTo.Longitude;
             User.Latitude = updateDeviceTokenAndLoccationDTo.Latitude;

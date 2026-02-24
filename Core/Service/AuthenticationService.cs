@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Service.Specifications;
@@ -35,6 +36,7 @@ namespace Service
         IPublishEndpoint _publishEndpoint,
         LinkGenerator _linkGenerator,
         IUnitOfWork _unitOfWork,
+        ILogger<AuthenticationService> _logger,
         IGeoLocationService _geoLocationService) : IAuthenticationService
     {
         private readonly BloodDonationSettings _settings = _optionsSnapshot.Value;
@@ -60,7 +62,7 @@ namespace Service
             var Result = await _userManager.CreateAsync(NewUser, registerDTo.Password);
             if (Result.Succeeded)
             {
-                var contxt = httpContextAccessor.HttpContext ?? throw new UnauthorizedException("يرجى تسجيل الدخول أولاً");
+                var contxt = httpContextAccessor.HttpContext ?? throw new UnauthorizedException("يرجى التسجيل أولاً");
                 var Token = await _userManager.GenerateEmailConfirmationTokenAsync(NewUser);
                 var EncodedToken = Convert.ToBase64String(Encoding.UTF8.GetBytes(Token));
 
@@ -84,6 +86,7 @@ namespace Service
                 var CityRepo = _unitOfWork.GetRepository<City, int>();
                 var SpecificationCity = new CityWithGovernorateByCityId(NewUser.CityId);
                 var City = await CityRepo.GetByIdAsync(SpecificationCity);
+                _logger.LogInformation("New user registered: {Email}, City: {CityName}, Governorate: {GovernorateName}", NewUser.Email, City.NameAr, City.Governorate.NameEn);
                 return new AuthRegisterDTo()
                 {
                     Email = registerDTo.Email,
@@ -93,6 +96,7 @@ namespace Service
             else
             {
                 var Errors = Result.Errors.Select(E => E.Description).ToList();
+                _logger.LogWarning("Failed registration attempt for email: {Email}. Errors: {Errors}", registerDTo.Email, string.Join(", ", Errors));
                 throw new BadRequestException(Errors);
             }
         }
@@ -101,17 +105,21 @@ namespace Service
             var User = await _userManager.Users.Include(U => U.City).ThenInclude(C => C.Governorate).Include(U => U.RefreshTokens).FirstOrDefaultAsync(U => U.Email == loginDTo.Email) ?? throw new UserNotFoundException(loginDTo.Email);
             if (await _userManager.IsLockedOutAsync(User))
             {
+                _logger.LogWarning("Locked out login attempt for email: {Email}", loginDTo.Email);
                 throw new UnauthorizedException("هذا الحساب محظور، يرجى التواصل مع الإدارة!");
             }
             if (await _userManager.IsEmailConfirmedAsync(User) == false)
             {
+                _logger.LogWarning("Unconfirmed email login attempt for email: {Email}", loginDTo.Email);
                 throw new ForbiddenException("من فضلك فعّل بريدك الإلكتروني قبل تسجيل الدخول.");
             }
             if (await _userManager.CheckPasswordAsync(User, loginDTo.Password))
             {
+                _logger.LogInformation("Successful login for email: {Email}", loginDTo.Email);
                 await _userManager.ResetAccessFailedCountAsync(User);
                 if (loginDTo.DeviceToken is not null) // Consume
                 {
+                    _logger.LogInformation("Updating device token for user: {Email}", loginDTo.Email);
                     User.DeviceToken = loginDTo.DeviceToken;
                     await _userManager.UpdateAsync(User);
                     await _geoLocationService.UpdateDonorLocationAndDeviceTokenAsync(User.Id.ToString(), User.DeviceToken, User.Longitude, User.Latitude, User.BloodTypeId.ToString());
@@ -144,6 +152,7 @@ namespace Service
             else
             {
                 await _userManager.AccessFailedAsync(User);
+                _logger.LogWarning("Failed login attempt for email: {Email}. Incorrect password.", loginDTo.Email);
                 throw new UnauthorizedException("كلمة السر غير صحيحة!");
             }
         }
@@ -159,16 +168,26 @@ namespace Service
 
                 payload = await GoogleJsonWebSignature.ValidateAsync(googleLoginDTo.IdToken, settings);
             }
+            catch (InvalidJwtException ex)
+            {
+                _logger.LogWarning(ex, "Google token validation failed. The provided token is invalid, malformed, or expired.");
+                throw new UnauthorizedException("Invalid Google Token");
+            }
             catch (Exception ex)
             {
-                throw new UnauthorizedAccessException("Invalid Google Token");
+                _logger.LogError(ex, "A system error occurred while validating Google token. Possible network issue or Google API outage.");
+                throw new InvalidOperationException("Authentication service is temporarily unavailable. Please try again later.");
             }
             var User = await _userManager.Users.Include(U => U.City).ThenInclude(C => C.Governorate).FirstOrDefaultAsync(U => U.Email == payload.Email) ?? throw new UserNotFoundException(payload.Email);
 
             if (!User.EmailConfirmed)
+            {
+                _logger.LogWarning("Unconfirmed email login attempt for email: {Email} via Google. Email not confirmed.", payload.Email);
                 throw new ForbiddenException("من فضلك فعّل بريدك الإلكتروني قبل تسجيل الدخول.");
+            }
             if (googleLoginDTo.DeviceToken is not null) // Consume
             {
+                _logger.LogInformation("Updating device token for user: {Email} via Google login.", payload.Email);
                 User.DeviceToken = googleLoginDTo.DeviceToken;
                 await _userManager.UpdateAsync(User);
                 await _geoLocationService.UpdateDonorLocationAndDeviceTokenAsync(User.Id.ToString(), User.DeviceToken, User.Longitude, User.Latitude, User.BloodTypeId.ToString());
@@ -187,7 +206,7 @@ namespace Service
             User.RefreshTokens.Add(refreshTokenEntity);
             await _userManager.UpdateAsync(User);
             #endregion
-
+            _logger.LogInformation("Successful Google login for email: {Email}", payload.Email);
             return new AuthUserDTo // With Refresh Token
             {
                 Email = User.Email!,
@@ -241,15 +260,18 @@ namespace Service
         }
         public async Task SendForgetPasswordOTPAsync(ForgetPasswordDTo forgetPasswordDTo)
         {
+            _logger.LogInformation("Password reset requested for email: {Email}", forgetPasswordDTo.Email);
             var User = await _userManager.FindByEmailAsync(forgetPasswordDTo.Email) ?? throw new UserNotFoundException(forgetPasswordDTo.Email);
             if (await _userManager.IsLockedOutAsync(User))
             {
+                _logger.LogWarning("Locked out password reset attempt for email: {Email}", forgetPasswordDTo.Email);
                 throw new UnauthorizedException("هذا الحساب محظور، يرجى التواصل مع الإدارة!");
             }
             var OTPCode = GenerateOTPCode();
             User.ResetCode = OTPCode;
             User.ExpireCodeTime = DateTime.UtcNow.AddMinutes(_settings.MinutesToExpireOTPCode);
             await _userManager.UpdateAsync(User);
+            _logger.LogInformation("Generated OTP code for email: {Email}. OTP expires at: {ExpireTime}", forgetPasswordDTo.Email, User.ExpireCodeTime);
             await _publishEndpoint.Publish(new SendEmailEvent()
             {
                 Body = EmailSendHelper.GetForgetPasswordEmailBody(OTPCode),
@@ -259,15 +281,18 @@ namespace Service
         }
         public async Task<ResetPasswordToken> VerifyForgetPasswordOTPAsync(VerifyOTPDTo verifyOTPDTo)
         {
+            _logger.LogInformation("Verifying OTP for email: {Email}", verifyOTPDTo.Email);
             var User = await _userManager.FindByEmailAsync(verifyOTPDTo.Email) ?? throw new UserNotFoundException(verifyOTPDTo.Email);
             if (User.ResetCode is null || User.ResetCode != verifyOTPDTo.OTP || User.ExpireCodeTime < DateTime.UtcNow)
             {
+                _logger.LogWarning("Invalid or expired OTP verification attempt for email: {Email}", verifyOTPDTo.Email);
                 throw new UnauthorizedException("رمز التحقق لمرة واحدة غير صالح أو منتهي الصلاحية!");
             }
             User.ResetCode = null;
             User.ExpireCodeTime = null!;
             await _userManager.UpdateAsync(User);
             var token = await _userManager.GeneratePasswordResetTokenAsync(User);
+            _logger.LogInformation("OTP verified successfully for email: {Email}. Generated password reset token.", verifyOTPDTo.Email);
             return new ResetPasswordToken()
             {
                 ResetToken = token
@@ -275,13 +300,16 @@ namespace Service
         }
         public async Task<bool> ResetPasswordAsync(ResetPasswordDTo resetPasswordDTo)
         {
+            _logger.LogInformation("Attempting to reset password for email: {Email}", resetPasswordDTo.Email);
             var User = await _userManager.FindByEmailAsync(resetPasswordDTo.Email) ?? throw new UserNotFoundException(resetPasswordDTo.Email);
             var Result = await _userManager.ResetPasswordAsync(User, resetPasswordDTo.ResetToken, resetPasswordDTo.NewPassword);
             if (!Result.Succeeded)
             {
                 List<string> Errors = Result.Errors.Select(E => E.Description).ToList();
+                _logger.LogWarning("Failed password reset attempt for email: {Email}. Errors: {Errors}", resetPasswordDTo.Email, string.Join(", ", Errors));
                 throw new BadRequestException(Errors);
             }
+            _logger.LogInformation("Password reset successfully for email: {Email}", resetPasswordDTo.Email);
             return true;
         }
         private string GenerateOTPCode()
@@ -291,6 +319,7 @@ namespace Service
         }
         public async Task ConfirmEmail(ConfirmEmailDTo confirmEmailDTo)
         {
+            _logger.LogInformation("Attempting to confirm email: {Email}", confirmEmailDTo.Email);
             var User = await _userManager.FindByEmailAsync(confirmEmailDTo.Email) ?? throw new UserNotFoundException(confirmEmailDTo.Email);
             var Token = Encoding.UTF8.GetString(
                 Convert.FromBase64String(confirmEmailDTo.Token)
@@ -298,24 +327,28 @@ namespace Service
             var Result = await _userManager.ConfirmEmailAsync(User, Token);
             if (!Result.Succeeded)
             {
+                _logger.LogWarning("Failed email confirmation attempt for email: {Email}. Errors: {Errors}", confirmEmailDTo.Email, string.Join(", ", Result.Errors.Select(E => E.Description)));
                 throw new BadRequestException(Result.Errors.Select(E => E.Description).ToList());
             }
         }
         public async Task<bool> ChangePasswordAsync(ChangePasswordDTo changePasswordDTo)
         {
+            _logger.LogInformation("Attempting to change password for user with ID: {UserId}", httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier));
             var UserId = httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new UnauthorizedException("User is Unauthenticated!");
             var User = await _userManager.FindByIdAsync(UserId) ?? throw new UserNotFoundException(UserId);
             var Result = await _userManager.ChangePasswordAsync(User, changePasswordDTo.OldPassword, changePasswordDTo.NewPassword);
             if (!Result.Succeeded)
             {
                 var Errors = Result.Errors.Select(E => E.Description).ToList();
+                _logger.LogWarning("Failed password change attempt for user with ID: {UserId}. Errors: {Errors}", UserId, string.Join(", ", Errors));
                 throw new BadRequestException(Errors);
             }
+            _logger.LogInformation("Password changed successfully for user with ID: {UserId}", UserId);
             return true;
         }
 
 
-        #region Generate and Hash Token
+        #region Generate and Hash Refresh Token
         private string GenerateSecureToken()
         {
             var randomNumber = new byte[32];
@@ -335,21 +368,32 @@ namespace Service
         public async Task<NewRefreshTokenDTo> RefreshTokenAsync(RefreshTokenDTo model)
         {
             var principal = GetPrincipalFromExpiredToken(model.Token);
-            if (principal == null) throw new ForbiddenException("رمز وصول غير صالح");
+            if (principal == null)
+            {
+                _logger.LogWarning("Invalid token refresh attempt. Unable to extract principal from expired token.");
+                throw new ForbiddenException("رمز وصول غير صالح");
+            }
 
             var emailClaim = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email) ?? throw new UserNotFoundException("لا يوجد مستخدم بهذا البريد الإلكتروني!");
 
             var email = emailClaim.Value;
 
             var user = await _userManager.FindByEmailAsync(email);
-            if (user == null) throw new UserNotFoundException(email);
+            if (user == null)
+            { 
+                _logger.LogWarning("Token refresh attempt failed. No user found with email: {Email}", email);
+                throw new UserNotFoundException(email); 
+            }
 
             var incomingTokenHash = ComputeSha256Hash(model.RefreshToken);
 
             var userRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.TokenHash == incomingTokenHash);
 
             if (userRefreshToken == null || !userRefreshToken.IsActive)
+            {
+                _logger.LogWarning("Invalid or expired refresh token attempt for user with email: {Email}", email);
                 throw new ForbiddenException("رمز التحديث غير صالح أو منتهي الصلاحية، يرجى تسجيل الدخول مرة أخرى.");
+            }
 
             userRefreshToken.RevokedOn = DateTime.UtcNow;
 
@@ -367,7 +411,7 @@ namespace Service
 
             user.RefreshTokens.Add(newRefreshTokenEntity);
             await _userManager.UpdateAsync(user);
-
+            _logger.LogInformation("Refresh token successfully renewed for user with email: {Email}", email);
             return new NewRefreshTokenDTo
             {
                 Token = newJwtToken,
@@ -401,6 +445,7 @@ namespace Service
             var jwtSecurityToken = securityToken as JwtSecurityToken;
             if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
             {
+                _logger.LogWarning("Invalid token claims during refresh token validation. Token is not a valid JWT or does not use the expected signing algorithm.");
                 throw new SecurityTokenException("Invalid Token Claims");
             }
 
