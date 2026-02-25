@@ -77,6 +77,15 @@ graph TD;
 
 ---
 
+## 🗄️ Database Entity-Relationship Diagram (ERD)
+The database is highly normalized and designed to handle complex relationships, including geospatial tracking and dynamic compatibility matching between donors and recipients.
+
+<div align="center">
+<img src="Docs/ElixirERD.svg" alt="Elixir Database ERD" width="100%">
+</div>
+
+---
+
 ## ✨ Key Features
 
 * **Real-time Donor Matching:** Instantly identifies compatible donors within a specific geographic radius using Redis GeoSpatial.
@@ -158,7 +167,7 @@ BloodDonation.Solution/
 │   └── 📦 Presentation         (API Controllers, Custom API Attributes)
 │
 ├── 3. ASP.NET API
-│   └── 📦 Elixir.API   (Program.cs, SignalR Hubs, Exception Middleware, CorrelationId Middleware, Health Checks, Redis Seeder)
+│   └── 📦 Elixir.API   (Program.cs, SignalR Hubs, Exception Middleware, Correlation Middleware, Health Checks, Redis Seeder Worker)
 │
 └── 4. Cross-Cutting Concerns
     └── 📦 Shared               (DTOs, RabbitMQ Integration Events, Error Models)
@@ -176,9 +185,9 @@ To run Elixir on your local machine, follow these detailed steps to set up the e
 Ensure you have the following installed and configured before running the project:
 
 * **.NET 8.0 SDK**
-* **SQL Server** (LocalDB or a full local instance).
-* **Redis Server** (Running locally on default port `6379`).
-* **RabbitMQ** (Running locally on default port `5672`).
+* **SQL Server**
+* **Redis Server**
+* **RabbitMQ**
 * **Firebase Account:** You need a Firebase project to download the Service Account Key (`elixir-firebase-adminsdk.json`) for Push Notifications.
 * **New Relic Account:** Generate an Ingest License Key to monitor logs.
 * **Google Cloud Console:** To generate the `ClientId` for Google Authentication.
@@ -189,7 +198,7 @@ Ensure you have the following installed and configured before running the projec
 **1. Clone the repository:**
 
 ```bash
-git clone [https://github.com/Yehia-Dakhly/Elixir.git](https://github.com/Yehia-Dakhly/Elixir.git)
+git clone https://github.com/Yehia-Dakhly/Elixir.git
 cd Elixir
 
 ```

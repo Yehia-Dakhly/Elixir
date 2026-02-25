@@ -308,10 +308,10 @@ namespace Blood_Donation
                 #endregion
 
                 app.UseMiddleware<CorrelationalIdMiddleWare>();
+                app.UseSerilogRequestLogging();
                 app.UseMiddleware<ExceptionMiddleWare>();
                 app.UseSwagger();
                 app.UseSwaggerUI();
-                app.UseSerilogRequestLogging();
                 app.UseHttpsRedirection();
                 app.UseAuthentication();
                 app.UseAuthorization();
