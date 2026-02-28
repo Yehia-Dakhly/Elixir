@@ -1,0 +1,46 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using ServiceAbstraction;
+using Shared;
+using Shared.DataTransferObjects;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Presentation.Controllers
+{
+    public class DashboardController(IServiceManager _serviceManager) : ApiBaseController
+    {
+        [HttpGet("completed-requests-percentage")]
+        public async Task<ActionResult<float>> GetCompletedRequestsPercentage()
+        {
+            return Ok(await _serviceManager.DashboardService.GetCompleteRequestsPercentageAsync());
+        }
+        [HttpGet("failed-responses-percentage")]
+        public async Task<ActionResult<float>> GetResponsesFailedPercentage()
+        {
+            return Ok(await _serviceManager.DashboardService.GetResponsesFailedPercentageAsync());
+        }
+        [HttpGet("completed-responses-percentage")]
+        public async Task<ActionResult<float>> GetResponsesCompletedPercentage()
+        {
+            return Ok(await _serviceManager.DashboardService.GetResponsesCompletedPercentageAsync());
+        }
+        [HttpGet("critical-requests")]
+        public async Task<ActionResult<PaginatedResult<BloodRequestDTo>>> GetCriticalRequests(RequestQueryParams Params)
+        {
+            return Ok(await _serviceManager.DashboardService.GetCriticalRequestsAsync(Params));
+        }
+        [HttpGet("blood-types-percentage")]
+        public async Task<ActionResult<DonorsBloodTypesAnalysis>> GetBloodTypesPercentages()
+        {
+            return Ok(await _serviceManager.DashboardService.GetDonorsDistributionPercentageAsync());
+        }
+        [HttpGet("donors-readiness")]
+        public async Task<ActionResult<float>> GetDonorsReadinessPercentage()
+        {
+            return Ok(await _serviceManager.DashboardService.GetDonorsReadinessPercentageAsync());
+        }
+    }
+}

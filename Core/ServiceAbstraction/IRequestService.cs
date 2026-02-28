@@ -1,5 +1,6 @@
 ﻿using Shared;
 using Shared.DataTransferObjects;
+using System.Numerics;
 
 namespace ServiceAbstraction
 {

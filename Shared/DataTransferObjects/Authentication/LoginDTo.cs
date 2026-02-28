@@ -16,7 +16,7 @@ namespace Shared.DataTransferObjects.Authentication
         public string Email { get; set; } = null!;
         [Required]
         public string Password { get; set; } = null!;
-        [Required(ErrorMessage = "Device Token (FCM) is required")]
-        public string DeviceToken { get; set; } = null!;
+        //[Required(ErrorMessage = "Device Token (FCM) is required")]
+        public string? DeviceToken { get; set; } = null!;
     }
 }

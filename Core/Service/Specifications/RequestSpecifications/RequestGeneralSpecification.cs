@@ -7,7 +7,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Service.Specifications
+namespace Service.Specifications.RequestSpecifications
 {
     internal class RequestGeneralSpecification : BaseSpecifications<BloodRequests, int>
     {

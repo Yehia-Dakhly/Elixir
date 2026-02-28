@@ -7,7 +7,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Service.Specifications
+namespace Service.Specifications.DonationHistorySpecification
 {
     internal class DonationHistoryToUser : BaseSpecifications<DonationHistory, long>
     {

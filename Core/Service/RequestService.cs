@@ -7,9 +7,11 @@ using DomainLayer.Optopns;
 using MassTransit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Service.Specifications;
+using Service.Specifications.RequestSpecifications;
 using ServiceAbstraction;
 using Shared;
 using Shared.DataTransferObjects;
@@ -182,6 +184,7 @@ namespace Service
             _logger.LogInformation("User {UserId} closed blood request with id {RequestId}", RequesterId, RequestId);
             await _unitOfWork.SaveChangesAsync();
         }
+
         DateTime GetEgyptTime()
         {
             try

@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Persistence;
@@ -60,7 +61,15 @@ namespace Blood_Donation
                 Log.Information("Starting Elixir API Application...");
 
                 builder.Services.AddControllers();
-
+                builder.Services.AddCors(Options =>
+                {
+                    Options.AddPolicy("AllowAll", Builder =>
+                    {
+                        Builder.AllowAnyHeader();
+                        Builder.AllowAnyMethod();
+                        Builder.AllowAnyOrigin();
+                    });
+                });
                 builder.Host.UseSerilog(); // Tell the host to use Serilog for logging
 
                 #region API Key
@@ -154,8 +163,16 @@ namespace Blood_Donation
                         Provider =>
                         () => Provider.GetRequiredService<INotificationService>()
                     );
-                builder.Services.AddScoped<IServiceManager, ServiceManager>();
 
+                builder.Services.AddScoped<IDashboardService, DashboardService>();
+                builder.Services.AddScoped<Func<IDashboardService>>
+                    (
+                        Provider =>
+                        () => Provider.GetRequiredService<IDashboardService>()
+                    );
+
+
+                builder.Services.AddScoped<IServiceManager, ServiceManager>();
                 builder.Services.AddScoped<ICacheService, CacheService>();
                 builder.Services.AddScoped<IGeoLocationService, GeoLocationService>();
                 builder.Services.AddScoped<IFirebaseNotificationService, FirebaseNotificationService>();
@@ -288,7 +305,7 @@ namespace Blood_Donation
                 {
                     setup.SetEvaluationTimeInSeconds(600);
                     setup.MaximumHistoryEntriesPerEndpoint(60);
-                    setup.AddHealthCheckEndpoint("Elixir API System", "/health");
+                    setup.AddHealthCheckEndpoint("Elixir API System", "/api/health");
                 })
                 .AddInMemoryStorage();
                 #endregion
@@ -317,16 +334,30 @@ namespace Blood_Donation
                 app.UseAuthorization();
 
                 #region Health System Endpoints
-                app.MapHealthChecks("/health", new HealthCheckOptions
+                app.MapHealthChecks("/api/health", new HealthCheckOptions
                 {
                     Predicate = _ => true,
                     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse // UI.Client
-                });
+                }).WithTags("System Health");
                 // Dashboard
                 app.MapHealthChecksUI(options =>
                 {
                     options.UIPath = "/dashboard";
                 });
+
+                app.MapGet("/api/health/simple", async (HealthCheckService healthCheckService) =>
+                {
+                    var report = await healthCheckService.CheckHealthAsync();
+                    bool isSystemUp = report.Status == HealthStatus.Healthy || report.Status == HealthStatus.Degraded;
+                    return Results.Ok(isSystemUp);
+                })
+                .WithTags("System Health");
+                app.MapGet("/api/health/details", async (HealthCheckService healthCheckService) =>
+                {
+                    var report = await healthCheckService.CheckHealthAsync();
+                    return report;
+
+                }).WithTags("System Health");
                 #endregion
 
                 app.MapControllers();

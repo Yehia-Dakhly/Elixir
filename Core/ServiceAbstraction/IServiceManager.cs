@@ -14,5 +14,6 @@ namespace ServiceAbstraction
         IResponseService ResponseService { get; }
         ICompatibilityService CompatibilityService { get; }
         INotificationService NotificationService { get; }
+        IDashboardService DashboardService { get; }
     }
 }

@@ -13,7 +13,9 @@ namespace Service
         Func<IAuthenticationService> AuthenticationFactory,
         Func<IResponseService> ResponseFactory,
         Func<ICompatibilityService> CompatibilityFactory,
-        Func<INotificationService> NotificationFactory
+        Func<INotificationService> NotificationFactory,
+        Func<IDashboardService> DashboardFactory
+
         ) : IServiceManager
     {
         public ILookupService LookupService => LookupFactory.Invoke();
@@ -22,5 +24,6 @@ namespace Service
         public IResponseService ResponseService => ResponseFactory.Invoke();
         public ICompatibilityService CompatibilityService => CompatibilityFactory.Invoke();
         public INotificationService NotificationService => NotificationFactory.Invoke();
+        public IDashboardService DashboardService => DashboardFactory.Invoke();
     }
 }

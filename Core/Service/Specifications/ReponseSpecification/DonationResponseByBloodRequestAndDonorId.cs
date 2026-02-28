@@ -7,7 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Service.Specifications
+namespace Service.Specifications.DonationReponseSpecification
 {
     internal class DonationResponseByBloodRequestAndDonorId : BaseSpecifications<DonationResponses, long>
     {

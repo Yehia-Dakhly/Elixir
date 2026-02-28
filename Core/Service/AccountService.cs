@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Service.Specifications;
+using Service.Specifications.DonationHistorySpecification;
 using ServiceAbstraction;
 using Shared;
 using Shared.DataTransferObjects;

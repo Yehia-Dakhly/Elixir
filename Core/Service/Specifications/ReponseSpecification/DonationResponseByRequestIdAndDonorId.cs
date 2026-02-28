@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Service.Specifications
+namespace Service.Specifications.DonationReponseSpecification
 {
     internal class DonationResponseByRequestIdAndDonorId : BaseSpecifications<DonationResponses, long>
     {
