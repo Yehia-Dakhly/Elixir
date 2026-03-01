@@ -25,6 +25,7 @@ using Service;
 using Service.Consumers;
 using ServiceAbstraction;
 using Shared.ErrorModels;
+using Shared.Events;
 using StackExchange.Redis;
 using System.Text;
 
@@ -223,6 +224,7 @@ namespace Blood_Donation
                     conf.AddConsumer<UpdateLocationAndSendEmailForRegisteration>();
                     conf.AddConsumer<SendEmail>();
                     conf.AddConsumer<SendNotification>();
+                    conf.AddConsumer<SystemNotificationFired>();
                     conf.UsingRabbitMq((context, cfg) =>
                     {
                         cfg.Host(builder.Configuration["RabbitMQ:Host"], builder.Configuration["RabbitMQ:VirtualHost"], H =>
@@ -249,6 +251,10 @@ namespace Blood_Donation
                         cfg.ReceiveEndpoint("send-notification", e =>
                         {
                             e.ConfigureConsumer<SendNotification>(context);
+                        });
+                        cfg.ReceiveEndpoint("system-notification-fired", e =>
+                        {
+                            e.ConfigureConsumer<SystemNotificationFired>(context);
                         });
                         cfg.ConfigureEndpoints(context);
                     });

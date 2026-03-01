@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Shared.DataTransferObjects
+namespace Shared.Events
 {
-    public class NotificationMessageDTo
+    public record SystemNotificationEvent
     {
         public string Title { get; set; } = null!;
         public string Body { get; set; } = null!;
-        public Dictionary<string, string> Data { get; set; } = null!;
-        //public bool IsRead { get; set; }
-        //public DateTime SendAt { get; set; }
+        public int? BloodTypeId { get; set; }
+        public int? GovernorateId { get; set; }
     }
 }

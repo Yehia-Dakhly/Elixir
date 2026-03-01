@@ -60,8 +60,8 @@ namespace Service.Consumers
                 {
                     Title = Msg.Title,
                     Body = Msg.Body,
-                    IsRead = false,
-                    SendAt = Msg.SendAt,
+                    //IsRead = false,
+                    //SendAt = Msg.SendAt,
                     Data = Msg.Data,
                 });
             }

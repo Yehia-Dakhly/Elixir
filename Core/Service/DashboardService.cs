@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using DomainLayer.Contracts;
 using DomainLayer.Models;
+using MassTransit;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Service.Specifications;
@@ -9,6 +10,7 @@ using Service.Specifications.RequestSpecifications;
 using ServiceAbstraction;
 using Shared;
 using Shared.DataTransferObjects;
+using Shared.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +19,12 @@ using System.Threading.Tasks;
 
 namespace Service
 {
-    public class DashboardService(IUnitOfWork _unitOfWork, IMapper _mapper, UserManager<BloodDonationUser> _userManager) 
+    public class DashboardService(
+        IUnitOfWork _unitOfWork,
+        IMapper _mapper,
+        UserManager<BloodDonationUser> _userManager,
+        IPublishEndpoint _publishEndpoint
+        ) 
         : IDashboardService
     {
         public async Task<float> GetCompleteRequestsPercentageAsync()
@@ -39,7 +46,6 @@ namespace Service
 
             return (float)Math.Round(percentage, 1);
         }
-
         public async Task<PaginatedResult<BloodRequestDTo>> GetCriticalRequestsAsync(RequestQueryParams Params)
         {
             var RequestRepo = _unitOfWork.GetRepository<BloodRequests, int>();
@@ -49,7 +55,6 @@ namespace Service
             var Count = await RequestRepo.CountAsync(CriticalSpecification);
             return new PaginatedResult<BloodRequestDTo>(MappedRequests.Count(), Params.PageNumber, Count, MappedRequests);
         }
-
         public async Task<DonorsBloodTypesAnalysis> GetDonorsDistributionPercentageAsync()
         {
             var BloodTypesCount = await _userManager.Users.GroupBy(U => U.BloodTypeId)
@@ -104,7 +109,6 @@ namespace Service
             }
             return new DonorsBloodTypesAnalysis() {BloodTypesPercentagesDTo = BloodTypesPercentages, TotalDonorsCount = TotalCount };
         }
-
         public async Task<float> GetDonorsReadinessPercentageAsync()
         {
             var TotalDonors = await _userManager.Users.GroupBy(U => U.IsAvailable)
@@ -126,7 +130,6 @@ namespace Service
 
             return percentage;
         }
-
         public async Task<PaginatedResult<ElixirUserDTo>> GetElixirUsersAsync(UsersQueryParams queryParams)
         {
             var Users = _userManager.Users.Include(U => U.City).Where
@@ -171,7 +174,6 @@ namespace Service
             var MappedElixirUsers = _mapper.Map<IEnumerable<ElixirUserDTo>>(ElixirUsers);
             return new PaginatedResult<ElixirUserDTo>(Users.Count(), queryParams.Pagesize, CountUsers, MappedElixirUsers);
         }
-
         public async Task<float> GetResponsesCompletedPercentageAsync()
         {
             var ResponseRepo = _unitOfWork.GetRepository<DonationResponses, long>();
@@ -205,6 +207,16 @@ namespace Service
             float Percentage = ((float)FailedCount / TotalCount) * 100;
 
             return (float)Math.Round(Percentage, 1);
+        }
+        public async Task SendSystemNotificationAsync(SystemNotificationQueryParams queryParams)
+        {
+            await _publishEndpoint.Publish(new SystemNotificationEvent()
+            {
+                Title = queryParams.Title,
+                Body = queryParams.Body,
+                BloodTypeId = queryParams.BloodTypeId,
+                GovernorateId = queryParams.GovernorateId,
+            });
         }
     }
 }

@@ -47,5 +47,11 @@ namespace Presentation.Controllers
         {
             return Ok(await _serviceManager.DashboardService.GetElixirUsersAsync(queryParams));
         }
+        [HttpPost("system-notification")]
+        public async Task<ActionResult> SendSystemNotification(SystemNotificationQueryParams queryParams)
+        {
+            await _serviceManager.DashboardService.SendSystemNotificationAsync(queryParams);
+            return Ok(new { Message = "يتم إرسال الإشعارات" });
+        }
     }
 }
