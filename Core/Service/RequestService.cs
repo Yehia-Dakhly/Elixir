@@ -184,7 +184,17 @@ namespace Service
             _logger.LogInformation("User {UserId} closed blood request with id {RequestId}", RequesterId, RequestId);
             await _unitOfWork.SaveChangesAsync();
         }
-
+        public async Task<PaginatedResult<PersonalRequestsDTo>> GetPersonalRequestsAsync(PersonalRequestsQueryParams queryParams)
+        {
+            var UserIdString = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new UnauthorizedException("يرجى تسجيل الدخول");
+            var PersonalSpecification = new PersonalRequestsSpecification(Guid.Parse(UserIdString), queryParams);
+            var PersonalRequestsRepo = _unitOfWork.GetRepository<BloodRequests, int>();
+            var Requests = await PersonalRequestsRepo.GetAllAsync(PersonalSpecification);
+            var PersonalCountSpecification =  new PersonalRequestsCountSpecification(Guid.Parse(UserIdString), queryParams);
+            var PersonalRequestsCount = await PersonalRequestsRepo.CountAsync(PersonalCountSpecification);
+            var MappedRequests = _mapper.Map<IEnumerable<PersonalRequestsDTo>>(Requests);
+            return new PaginatedResult<PersonalRequestsDTo>(queryParams.Pagesize, queryParams.PageNumber, PersonalRequestsCount, MappedRequests);
+        }
         DateTime GetEgyptTime()
         {
             try

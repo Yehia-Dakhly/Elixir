@@ -78,6 +78,7 @@ namespace Blood_Donation
                 #endregion
 
 
+
                 #region AddSwaggerService
                 builder.Services.AddEndpointsApiExplorer();
                 builder.Services.AddSwaggerGen(Options =>
@@ -202,6 +203,7 @@ namespace Blood_Donation
                         };
                     });
                 #endregion
+
 
 
                 #region Redis

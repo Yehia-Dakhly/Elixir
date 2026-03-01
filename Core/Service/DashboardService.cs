@@ -17,7 +17,8 @@ using System.Threading.Tasks;
 
 namespace Service
 {
-    public class DashboardService(IUnitOfWork _unitOfWork, IMapper _mapper, UserManager<BloodDonationUser> _userManager) : IDashboardService
+    public class DashboardService(IUnitOfWork _unitOfWork, IMapper _mapper, UserManager<BloodDonationUser> _userManager) 
+        : IDashboardService
     {
         public async Task<float> GetCompleteRequestsPercentageAsync()
         {
@@ -46,7 +47,7 @@ namespace Service
             var Requests = await RequestRepo.GetAllAsync(CriticalSpecification);
             var MappedRequests = _mapper.Map<IEnumerable<BloodRequestDTo>>(Requests);
             var Count = await RequestRepo.CountAsync(CriticalSpecification);
-            return new PaginatedResult<BloodRequestDTo>(Params.Pagesize, Params.PageNumber, Count, MappedRequests);
+            return new PaginatedResult<BloodRequestDTo>(MappedRequests.Count(), Params.PageNumber, Count, MappedRequests);
         }
 
         public async Task<DonorsBloodTypesAnalysis> GetDonorsDistributionPercentageAsync()
@@ -124,6 +125,51 @@ namespace Service
             float percentage = (float)Math.Round(((float)IAvailable / TotalCount) * 100, 1);
 
             return percentage;
+        }
+
+        public async Task<PaginatedResult<ElixirUserDTo>> GetElixirUsersAsync(UsersQueryParams queryParams)
+        {
+            var Users = _userManager.Users.Include(U => U.City).Where
+                (
+                    U =>
+                    (
+                       (string.IsNullOrEmpty(queryParams.Search) || U.FullName.Contains(queryParams.Search))
+                       && (!queryParams.IsAvailable.HasValue || U.IsAvailable == queryParams.IsAvailable)
+                       && (!queryParams.CityId.HasValue || U.CityId == queryParams.CityId)
+                       && (!queryParams.BloodType.HasValue || U.BloodTypeId == queryParams.BloodType)
+                       && (!queryParams.GovernorateId.HasValue || U.City.GovernorateId == queryParams.GovernorateId)
+                    )
+                ).Skip((queryParams.PageNumber - 1) * queryParams.Pagesize).Take(queryParams.Pagesize);
+            var CountUsers = _userManager.Users.Include(U => U.City).Count
+                (
+                    U =>
+                    (
+                       (string.IsNullOrEmpty(queryParams.Search) || U.FullName.Contains(queryParams.Search))
+                       && (!queryParams.IsAvailable.HasValue || U.IsAvailable == queryParams.IsAvailable)
+                       && (!queryParams.CityId.HasValue || U.CityId == queryParams.CityId)
+                       && (!queryParams.BloodType.HasValue || U.BloodTypeId == queryParams.BloodType)
+                       && (!queryParams.GovernorateId.HasValue || U.City.GovernorateId == queryParams.GovernorateId)
+                    )
+                );
+            /*
+             * Skip = (PageIndex - 1) * PageSize;
+             * Take = PageSize;
+             */
+            Users = queryParams.SortingOption switch
+            {
+                UsersSortingOptions.NameAsc => Users.OrderBy(U => U.FullName),
+                UsersSortingOptions.NameDesc => Users.OrderByDescending(U => U.FullName),
+                UsersSortingOptions.AgeAsc => Users.OrderBy(U => U.Age),
+                UsersSortingOptions.AgeDesc => Users.OrderByDescending(U => U.Age),
+                UsersSortingOptions.FaildAsc => Users.OrderBy(U => U.MaxFailedDonationCount),
+                UsersSortingOptions.FaildDesc => Users.OrderByDescending(U => U.MaxFailedDonationCount),
+                UsersSortingOptions.BloodTypeAsc => Users.OrderBy(U => U.BloodTypeId),
+                UsersSortingOptions.BloodTypeDesc => Users.OrderByDescending(U => U.BloodTypeId),
+                _ => Users.OrderBy(U => U.Id)
+            };
+            var ElixirUsers = await Users.ToListAsync();
+            var MappedElixirUsers = _mapper.Map<IEnumerable<ElixirUserDTo>>(ElixirUsers);
+            return new PaginatedResult<ElixirUserDTo>(Users.Count(), queryParams.Pagesize, CountUsers, MappedElixirUsers);
         }
 
         public async Task<float> GetResponsesCompletedPercentageAsync()

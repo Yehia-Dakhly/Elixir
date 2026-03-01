@@ -11,5 +11,6 @@ namespace ServiceAbstraction
         public Task<PaginatedResult<BloodRequestDTo>> GetRequestsAsync(RequestQueryParams Params);
         public Task CloseBloodRequestAsync(Guid RequesterId, int RequestId);
         public Task<BloodRequestDTo> GetRequestByIdAsync(int RequestId);
+        public Task<PaginatedResult<PersonalRequestsDTo>> GetPersonalRequestsAsync(PersonalRequestsQueryParams queryParams);
     }
 }

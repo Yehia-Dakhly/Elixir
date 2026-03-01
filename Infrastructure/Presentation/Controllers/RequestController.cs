@@ -18,6 +18,11 @@ namespace Presentation.Controllers
         {
             return Ok(await _serviceManager.RequestService.GetRequestsAsync(Params));
         }
+        [HttpGet("personal-requests")]
+        public async Task<ActionResult<PaginatedResult<PersonalRequestsDTo>>> GetPersonalRequests(PersonalRequestsQueryParams Params) // Query Params
+        {
+            return Ok(await _serviceManager.RequestService.GetPersonalRequestsAsync(Params));
+        }
         [HttpGet("request")]
         public async Task<ActionResult<PaginatedResult<BloodRequestDTo>>> GetRequestById(int Id)
         {

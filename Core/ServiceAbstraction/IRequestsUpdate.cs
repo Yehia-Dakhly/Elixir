@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Shared;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,6 @@ namespace ServiceAbstraction
 {
     public interface IRequestsUpdate
     {
-        public Task UpdateRequestAsync(int RequestId, object Data);
+        public Task UpdateRequestAsync(int RequestId, RequestUpdateSignalRDTo Data);
     }
 }

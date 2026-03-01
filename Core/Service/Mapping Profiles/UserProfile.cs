@@ -17,6 +17,8 @@ namespace Service.Mapping_Profiles
                 .ForMember(U => U.CityName, O => O.MapFrom(U => U.City.NameAr))
                 .ForMember(U => U.Gender, O => O.MapFrom(U => U.Gender.ToString()))
                 .ForMember(U => U.BloodType, O => O.MapFrom(U => $"{U.BloodType.Symbol}{U.BloodType.RhFactor}"));
+            CreateMap<BloodDonationUser, ElixirUserDTo>()
+                .ForMember(U => U.City, O => O.MapFrom(U => U.City.NameAr));
         }
     }
 }

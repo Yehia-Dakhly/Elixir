@@ -42,5 +42,10 @@ namespace Presentation.Controllers
         {
             return Ok(await _serviceManager.DashboardService.GetDonorsReadinessPercentageAsync());
         }
+        [HttpGet("elixir-users")]
+        public async Task<ActionResult<PaginatedResult<ElixirUserDTo>>> GetElixirUsers(UsersQueryParams queryParams)
+        {
+            return Ok(await _serviceManager.DashboardService.GetElixirUsersAsync(queryParams));
+        }
     }
 }

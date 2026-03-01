@@ -11,11 +11,11 @@ namespace Presentation.Controllers
     [AllowAnonymous]
     public class AuthenticationController(IServiceManager _serviceManager) : ApiBaseController
     {
-        [HttpGet("test-newrelic-alert")]
-        public IActionResult TestAlert()
-        {
-            throw new Exception("This is a simulated fatal error to test New Relic alerts!");
-        }
+        //[HttpGet("test-newrelic-alert")]
+        //public IActionResult TestAlert()
+        //{
+        //    throw new Exception("This is a simulated fatal error to test New Relic alerts!");
+        //}
         [HttpPost("login")]
         public async Task<ActionResult<AuthUserDTo>> Login(LoginDTo loginDTo)
         {

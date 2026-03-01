@@ -7,6 +7,7 @@ using MassTransit.Transports;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ServiceAbstraction;
+using Shared;
 using Shared.Events;
 
 namespace Service.Consumers
@@ -48,7 +49,7 @@ namespace Service.Consumers
             _logger.LogInformation("Updated BloodRequest with Id: {BloodRequestId} - New ResponsesCount: {ResponsesCount}", Msg.BloodRequestId, BloodRequest.ResponsesCount);
             #endregion
 
-            await _requestsUpdate.UpdateRequestAsync(Msg.BloodRequestId, new { ResponsesCount = BloodRequest.ResponsesCount, CollectedCount = BloodRequest.CollectedBags });
+            await _requestsUpdate.UpdateRequestAsync(Msg.BloodRequestId, new RequestUpdateSignalRDTo { ResponsesCount = BloodRequest.ResponsesCount, CollectedCount = BloodRequest.CollectedBags });
             
             #region Add Donation Response To History
             var DonationHistoryRepo = _unitOfWork.GetRepository<DonationHistory, long>();

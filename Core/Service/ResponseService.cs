@@ -14,6 +14,7 @@ using Service.Specifications.DonationHistorySpecification;
 using Service.Specifications.DonationReponseSpecification;
 using Service.Specifications.RequestSpecifications;
 using ServiceAbstraction;
+using Shared;
 using Shared.DataTransferObjects;
 using Shared.Events;
 
@@ -27,7 +28,8 @@ namespace Service
         IOptionsSnapshot<BloodDonationSettings> _optionsSnapshot,
         IPublishEndpoint _publishEndpoint,
         ICompatibilityService _compatibilityService,
-        ILogger<ResponseService> _logger
+        ILogger<ResponseService> _logger,
+        IRequestsUpdate _requestsUpdateServiceSR
         ) : IResponseService
     {
         private readonly BloodDonationSettings _bloodDonationSettings = _optionsSnapshot.Value;
@@ -100,7 +102,7 @@ namespace Service
                     return new RespondBloodRequestDTo() { CanResponse = true, PhoneNumber = BloodRequest.PhoneNumber };
                 }
                 _logger.LogInformation("User with Id {DonorId} attempted to respond to Blood Request with Id {BloodRequestId} but the request has already received enough responses. Current Responses: {ResponsesCount}, Required Bags: {BagsCount}", DonorId, BloodRequestId, BloodRequest.ResponsesCount, BloodRequest.BagsCount);
-                throw new ForbiddenException("تم اكتمال الردود على هذا الطلب");
+                throw new ForbiddenException("تم تغطية العدد المطلوب مبدئياً");
             }
             else
             {
@@ -125,7 +127,7 @@ namespace Service
             var ResSpecification = new DonationResponseByBloodRequestAndDonorId(BloodRequestId, DonorId);
 
             var Response = (await ResponseRepo.GetAllAsync(ResSpecification)).FirstOrDefault() ?? throw new DonationResponseNotFound(BloodRequestId);
-            if (Response.ResponseStatus == ResponseStatus.Arrived || Response.ResponseStatus == ResponseStatus.Rejected)
+            if (Response.ResponseStatus == DomainLayer.Models.ResponseStatus.Arrived || Response.ResponseStatus == DomainLayer.Models.ResponseStatus.Rejected)
             {
                 _logger.LogWarning("Attempt to confirm a donation response that has already been processed. RequesterId: {RequesterId}, DonorId: {DonorId}, BloodRequestId: {BloodRequestId}, CurrentStatus: {CurrentStatus}", RequesterId, DonorId, BloodRequestId, Response.ResponseStatus);
                 throw new ForbiddenException("تم التعامل مع هذا التبرع من قبل");
@@ -133,7 +135,7 @@ namespace Service
             if (HasDonated == true)
             {
                 BloodRequest.CollectedBags++;
-                Response.ResponseStatus = ResponseStatus.Arrived;
+                Response.ResponseStatus = DomainLayer.Models.ResponseStatus.Arrived;
                 await _unitOfWork.SaveChangesAsync();
                 if (BloodRequest.CollectedBags >= BloodRequest.BagsCount)
                 {
@@ -181,7 +183,8 @@ namespace Service
                     Donor.MaxFailedDonationCount++;
                     await _userManager.UpdateAsync(Donor);
                     BloodRequest.ResponsesCount--;
-                    Response.ResponseStatus = ResponseStatus.Rejected;
+                    await _requestsUpdateServiceSR.UpdateRequestAsync(BloodRequestId, new RequestUpdateSignalRDTo() { CollectedCount = BloodRequest.CollectedBags, ResponsesCount = BloodRequest.ResponsesCount });
+                    Response.ResponseStatus = DomainLayer.Models.ResponseStatus.Rejected;
                     await _unitOfWork.SaveChangesAsync();
                     if (Donor.MaxFailedDonationCount > _bloodDonationSettings.MaxFailedDonationCount) // Add this 3 To appsettings
                     {
@@ -190,6 +193,7 @@ namespace Service
                         _logger.LogWarning("Donor with Id {DonorId} and Name {DonorName} has been locked out due to exceeding maximum failed donation reports. MaxFailedDonationCount: {MaxFailedDonationCount}", DonorId, Donor.FullName, Donor.MaxFailedDonationCount);
                     }
                     // Search For Another Donor Here
+                    _logger.LogInformation("Donor with Id {DonorId} reported as not arrived for Blood Request with Id {BloodRequestId}. Searching for another donor...", DonorId, BloodRequestId);
                     await _publishEndpoint.Publish(new BloodRequestCreatedEvent()
                     {
                         IsDonorReported = true,
@@ -205,7 +209,6 @@ namespace Service
                         PatientName = BloodRequest.PatientName,
                         RequesterId = $"{BloodRequest.RequesterId}",
                     });
-                    _logger.LogInformation("Donor with Id {DonorId} reported as not arrived for Blood Request with Id {BloodRequestId}. Searching for another donor...", DonorId, BloodRequestId);
                     // Notify And Warn User!
                     await _publishEndpoint.Publish(new SendNotificationEvent()
                     {

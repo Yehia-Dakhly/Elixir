@@ -21,6 +21,12 @@ namespace Service.Mapping_Profiles
                 .ForMember(Q => Q.CityAr, O => O.MapFrom(Q => Q.City.NameAr))
                 .ForMember(Q => Q.CityEn, O => O.MapFrom(Q => Q.City.NameEn))
                 .ForMember(Q => Q.RequiredBloodType, O => O.MapFrom(Q => $"{Q.RequiredBloodType.Symbol}{Q.RequiredBloodType.RhFactor}"));
+
+            CreateMap<BloodRequests, PersonalRequestsDTo>()
+                .ForMember(R => R.BloodRequestDTo, O => O.MapFrom(R => R))
+                .ForMember(R => R.ResponsesDTos, O => O.MapFrom(R => R.DonationResponses))
+                .ForMember(R => R.ResponsesDTos, O => O.MapFrom(R => R.DonationResponses.OrderBy(R => R.ResponseStatus).ThenBy(R => R.ResponseAt)));
+        
         }
     }
 }

@@ -35,14 +35,19 @@ namespace Service
         IHttpContextAccessor httpContextAccessor,
         IPublishEndpoint _publishEndpoint,
         LinkGenerator _linkGenerator,
-        IUnitOfWork _unitOfWork,
         ILogger<AuthenticationService> _logger,
         IGeoLocationService _geoLocationService) : IAuthenticationService
     {
         private readonly BloodDonationSettings _settings = _optionsSnapshot.Value;
         public async Task<AuthRegisterDTo> RegisterAsync(RegisterDTo registerDTo)
         {
-            Gender Gender = registerDTo.Gender == 0 ? Gender.Undefined : registerDTo.Gender == 1 ? Gender.Male : Gender.Female;
+            _logger.LogInformation("An attempt to register for email: {Email}.", registerDTo.Email);
+            Gender Gender = registerDTo.Gender switch
+            {
+                1 => Gender.Male,
+                2 => Gender.Female,
+                _ => Gender.Undefined
+            };
             var NewUser = new BloodDonationUser()
             {
                 FullName = registerDTo.FullName,
@@ -62,7 +67,7 @@ namespace Service
             var Result = await _userManager.CreateAsync(NewUser, registerDTo.Password);
             if (Result.Succeeded)
             {
-                var contxt = httpContextAccessor.HttpContext ?? throw new UnauthorizedException("يرجى التسجيل أولاً");
+                var contxt = httpContextAccessor.HttpContext;
                 var Token = await _userManager.GenerateEmailConfirmationTokenAsync(NewUser);
                 var EncodedToken = Convert.ToBase64String(Encoding.UTF8.GetBytes(Token));
 
@@ -83,10 +88,7 @@ namespace Service
                     ConfirmationLink = ConfirmationLink!,
                     UserId = NewUser.Id.ToString(),
                 });
-                var CityRepo = _unitOfWork.GetRepository<City, int>();
-                var SpecificationCity = new CityWithGovernorateByCityId(NewUser.CityId);
-                var City = await CityRepo.GetByIdAsync(SpecificationCity);
-                _logger.LogInformation("New user registered: {Email}, City: {CityName}, Governorate: {GovernorateName}", NewUser.Email, City.NameAr, City.Governorate.NameEn);
+                _logger.LogInformation("New user registered: {Email}", NewUser.Email);
                 return new AuthRegisterDTo()
                 {
                     Email = registerDTo.Email,

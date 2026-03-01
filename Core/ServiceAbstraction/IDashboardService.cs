@@ -16,5 +16,6 @@ namespace ServiceAbstraction
         public Task<float> GetResponsesFailedPercentageAsync();
         public Task<DonorsBloodTypesAnalysis> GetDonorsDistributionPercentageAsync();
         public Task<float> GetDonorsReadinessPercentageAsync();
+        public Task<PaginatedResult<ElixirUserDTo>> GetElixirUsersAsync(UsersQueryParams queryParams);
     }
 }
