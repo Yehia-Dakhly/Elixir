@@ -10,7 +10,6 @@ namespace Shared
         public RequestSortingOptions SortingOption { get; set; }
         public string? Search { get; set; }
         public bool SuitableRequests { get; set; }
-        public bool IsPersonalRequests { get; set; } = false;
         public int PageNumber { get; set; } = 1;
         private int pagesize = DefaultPageSize;
         public int Pagesize 

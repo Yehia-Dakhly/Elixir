@@ -19,6 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Data\DataSeed\Admins.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Data\DataSeed\BloodTypes.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

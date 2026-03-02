@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ServiceAbstraction;
 using Shared;
+using Shared.Constants;
 using Shared.DataTransferObjects;
 
 namespace Presentation.Controllers
 {
+    [Authorize(Roles = ElixirRoles.User)]
     public class NotificationController(INotificationService _notificationService) : ApiBaseController
     {
         [HttpGet("notifications")]

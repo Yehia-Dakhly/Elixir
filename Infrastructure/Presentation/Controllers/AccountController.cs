@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Service;
 using ServiceAbstraction;
 using Shared;
+using Shared.Constants;
 using Shared.DataTransferObjects;
 using Shared.DataTransferObjects.Authentication.PasswordsAndOTPDTos;
 using System;
@@ -13,6 +14,7 @@ using System.Threading.Tasks;
 
 namespace Presentation.Controllers
 {
+    [Authorize(Roles = ElixirRoles.User)]
     public class AccountController(IAccountService _accountService) : ApiBaseController
     {
         [HttpGet("profile")]

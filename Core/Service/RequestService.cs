@@ -119,11 +119,7 @@ namespace Service
             {
                 throw new UnauthorizedException("User Not Authorized");
             }
-            if (Params.IsPersonalRequests == true)
-            {
-                RequesterId = Guid.Parse(UserIdString);
-            }
-            else if (Params.SuitableRequests == true)
+            if (Params.SuitableRequests == true)
             {
                 var User = await _userManager.FindByIdAsync(UserIdString) ?? throw new UserNotFoundException(UserIdString);
                 CompatibleTypes = await _compatibilityService.GetDonorCompatibleBloodTypesIdsForAllCategoriesAsync(User.BloodTypeId);

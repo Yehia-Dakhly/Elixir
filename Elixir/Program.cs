@@ -262,6 +262,7 @@ namespace Blood_Donation
                 #endregion
 
 
+
                 #region Auth
                 // Default Providers
                 builder.Services.Configure<DataProtectionTokenProviderOptions>(O => // Data Protector Token Provider
@@ -327,6 +328,23 @@ namespace Blood_Donation
                 var app = builder.Build();
 
                 #region Data Seeding
+                #region Default Roles
+                using (var scope = app.Services.CreateScope())
+                {
+                    var services = scope.ServiceProvider;
+                    try
+                    {
+                        var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+
+                        await RoleDataSeedser.SeedAsync(roleManager);
+                    }
+                    catch (Exception ex)
+                    {
+                        var logger = services.GetRequiredService<ILogger<Program>>();
+                        logger.LogError(ex, "An error occurred while seeding roles.");
+                    }
+                }
+                #endregion
                 using var Scope = app.Services.CreateScope();
                 var ObjectOfDataSeeding = Scope.ServiceProvider.GetRequiredService<IDataSeed>();
                 await ObjectOfDataSeeding.DataSeedAsync();

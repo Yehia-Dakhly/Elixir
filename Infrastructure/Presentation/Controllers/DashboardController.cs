@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ServiceAbstraction;
 using Shared;
+using Shared.Constants;
 using Shared.DataTransferObjects;
 using System;
 using System.Collections.Generic;
@@ -10,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace Presentation.Controllers
 {
+    [Authorize(Roles = ElixirRoles.Admin)]
     public class DashboardController(IServiceManager _serviceManager) : ApiBaseController
     {
         [HttpGet("completed-requests-percentage")]

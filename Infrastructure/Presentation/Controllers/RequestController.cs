@@ -2,10 +2,12 @@
 using Microsoft.AspNetCore.Mvc;
 using ServiceAbstraction;
 using Shared;
+using Shared.Constants;
 using Shared.DataTransferObjects;
 
 namespace Presentation.Controllers
-{ 
+{
+    [Authorize(Roles = ElixirRoles.User)]
     public class RequestController(IServiceManager _serviceManager) : ApiBaseController
     {
         [HttpPost("create")]

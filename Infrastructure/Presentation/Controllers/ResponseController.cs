@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ServiceAbstraction;
+using Shared.Constants;
 using Shared.DataTransferObjects;
 using System;
 using System.Collections.Generic;
@@ -9,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace Presentation.Controllers
 {
+    [Authorize(Roles = ElixirRoles.User)]
     public class ResponseController(IServiceManager _serviceManager) : ApiBaseController
     {
         [HttpPost("respond")]

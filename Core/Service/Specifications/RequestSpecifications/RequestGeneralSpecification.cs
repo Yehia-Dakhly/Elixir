@@ -12,9 +12,7 @@ namespace Service.Specifications.RequestSpecifications
     internal class RequestGeneralSpecification : BaseSpecifications<BloodRequests, int>
     {
         public RequestGeneralSpecification(RequestQueryParams Params, IEnumerable<int>? CompatibleTypesIdsForUser = null, Guid? UserId = null) : base(
-            R => (!Params.IsPersonalRequests || !UserId.HasValue || R.RequesterId == UserId)
-            && (Params.IsPersonalRequests || R.Status == Status.Open)
-            && (!Params.GovernorateId.HasValue || R.City.GovernorateId == Params.GovernorateId)
+            R => (!Params.GovernorateId.HasValue || R.City.GovernorateId == Params.GovernorateId)
             && (!Params.CityId.HasValue || R.CityId == Params.CityId)
             && (string.IsNullOrEmpty(Params.Search) || R.HospitalName.Contains(Params.Search))
             && (!Params.SuitableRequests || CompatibleTypesIdsForUser!.Contains(R.RequiredBloodTypeId))

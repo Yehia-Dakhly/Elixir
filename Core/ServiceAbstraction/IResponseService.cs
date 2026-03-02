@@ -11,7 +11,6 @@ namespace ServiceAbstraction
     {
         public Task<RespondBloodRequestDTo> RespondBloodRequestAsync(Guid DonorId, int BloodRequestId); // -
         public Task<ConfirmRequestResponseDTo> ConfirmBloodRequestResponse(Guid RequesterId, Guid DonorId, int BloodRequestId, bool HasDonated); // -
-        // Get All Users That Responses On Specific Request -
         public Task<IEnumerable<DonationResponseDTo>> GetAllResponseByRequestId(Guid RequesterId, int BloodRequestId);
     }
 }

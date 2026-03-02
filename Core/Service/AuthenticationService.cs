@@ -15,6 +15,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Service.Specifications;
 using ServiceAbstraction;
+using Shared.Constants;
 using Shared.DataTransferObjects.Authentication;
 using Shared.DataTransferObjects.Authentication.PasswordsAndOTPDTos;
 using Shared.DataTransferObjects.Authentication.ResetForgetChangePasswordDTos;
@@ -39,7 +40,7 @@ namespace Service
         IGeoLocationService _geoLocationService) : IAuthenticationService
     {
         private readonly BloodDonationSettings _settings = _optionsSnapshot.Value;
-        public async Task<AuthRegisterDTo> RegisterAsync(RegisterDTo registerDTo)
+        public async Task<AuthRegisterDTo> RegisterAsync(RegisterDTo registerDTo) // Age Constraint
         {
             _logger.LogInformation("An attempt to register for email: {Email}.", registerDTo.Email);
             Gender Gender = registerDTo.Gender switch
@@ -52,7 +53,7 @@ namespace Service
             {
                 FullName = registerDTo.FullName,
                 Email = registerDTo.Email,
-                Age = registerDTo.Age,
+                DateOfBirth = registerDTo.DateOfBirth,
                 BloodTypeId = registerDTo.BloodTypeId,
                 Gender = Gender,
                 Latitude = registerDTo.Latitude,
@@ -67,6 +68,7 @@ namespace Service
             var Result = await _userManager.CreateAsync(NewUser, registerDTo.Password);
             if (Result.Succeeded)
             {
+                await _userManager.AddToRoleAsync(NewUser, ElixirRoles.User);
                 var contxt = httpContextAccessor.HttpContext;
                 var Token = await _userManager.GenerateEmailConfirmationTokenAsync(NewUser);
                 var EncodedToken = Convert.ToBase64String(Encoding.UTF8.GetBytes(Token));

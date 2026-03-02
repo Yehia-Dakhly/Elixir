@@ -1,0 +1,14 @@
+﻿[
+  {
+    "FullName": "مدير النظام",
+    "Email": "elixir.dev.team@gmail.com",
+    "PhoneNumber": "+201159337071",
+    "DateOfBirth": "2004-06-25T00:00:00",
+    "Gender": 1,
+    "BloodTypeId": 3,
+    "CityId": 15,
+    "Latitude": 30.0444,
+    "Longitude": 31.2357,
+    "IsAvailable": true
+  }
+]

@@ -20,9 +20,8 @@ namespace Shared.DataTransferObjects.Authentication
         [Required]
         [Range(1, 8, ErrorMessage = "يرجى اختيار فئة دم صحيحة")]
         public int BloodTypeId { get; set; }
-        [Required]
-        [Range(18, 65, ErrorMessage = "غير مسموح لك بالتسجيل")]
-        public short Age { get; set; }
+        [Required(ErrorMessage = "يجب تحديد تاريخ الميلاد")]
+        public DateTime DateOfBirth { get; set; }
         [Required(ErrorMessage = "يجب اختيار النوع")]
         [Range(1, 2)]
         public int Gender { get; set; }
