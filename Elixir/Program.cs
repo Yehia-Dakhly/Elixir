@@ -6,6 +6,7 @@ using DomainLayer;
 using DomainLayer.Contracts;
 using DomainLayer.Models;
 using DomainLayer.Optopns;
+using Google;
 using HealthChecks.UI.Client;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -334,9 +335,16 @@ namespace Blood_Donation
                     var services = scope.ServiceProvider;
                     try
                     {
+                        var _dbContext = services.GetRequiredService<BloodDonationDbContext>();
+                        var pendingMigrations = await _dbContext.Database.GetPendingMigrationsAsync();
+                        if (pendingMigrations.Any())
+                        {
+                            await _dbContext.Database.MigrateAsync();
+                        }
                         var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-
                         await RoleDataSeedser.SeedAsync(roleManager);
+                        var ObjectOfDataSeeding = services.GetRequiredService<IDataSeed>();
+                        await ObjectOfDataSeeding.DataSeedAsync();
                     }
                     catch (Exception ex)
                     {
@@ -344,12 +352,8 @@ namespace Blood_Donation
                         logger.LogError(ex, "An error occurred while seeding roles.");
                     }
                 }
+                #endregion                
                 #endregion
-                using var Scope = app.Services.CreateScope();
-                var ObjectOfDataSeeding = Scope.ServiceProvider.GetRequiredService<IDataSeed>();
-                await ObjectOfDataSeeding.DataSeedAsync();
-                #endregion
-
                 app.UseMiddleware<CorrelationalIdMiddleWare>();
                 app.UseSerilogRequestLogging();
                 app.UseMiddleware<ExceptionMiddleWare>();

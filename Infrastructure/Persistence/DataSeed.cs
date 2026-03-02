@@ -1,4 +1,5 @@
 ﻿using DomainLayer.Contracts;
+using DomainLayer.Exceptions;
 using DomainLayer.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -8,17 +9,12 @@ using System.Text.Json;
 
 namespace Persistence
 {
-    public class DataSeed(BloodDonationDbContext _dbContext, IPasswordHasher<BloodDonationUser> _passwordHasher) : IDataSeed
+    public class DataSeed(BloodDonationDbContext _dbContext, UserManager<BloodDonationUser> _userManager) : IDataSeed
     {
         public async Task DataSeedAsync()
         {
             try
             {
-                var PendingMigrations = await _dbContext.Database.GetPendingMigrationsAsync();
-                if (PendingMigrations.Any())
-                {
-                    await _dbContext.Database.MigrateAsync();
-                }
                 if (!_dbContext.Governorates.Any())
                 {
                     var FilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "DataSeed", "Governorates.json");
@@ -74,41 +70,32 @@ namespace Persistence
                     }
                 }
                 await _dbContext.SaveChangesAsync();
-                if (!_dbContext.Users.Any())
+                if (!_userManager.Users.Any())
                 {
                     var FilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "DataSeed", "Admins.json");
                     using var AdminsData = File.OpenRead(FilePath);
                     var Admins = await JsonSerializer.DeserializeAsync<List<BloodDonationUser>>(AdminsData);
+
                     if (Admins is not null && Admins.Any())
                     {
-                        var AdminRole = _dbContext.Roles.FirstOrDefault(R => R.Name == ElixirRoles.Admin);
-                        var NewAdminsRoles = new List<IdentityUserRole<Guid>>();
-                        //await _dbContext.Users.AddRangeAsync(Admins);
                         foreach (var Admin in Admins)
                         {
-                            Admin.Id = Guid.NewGuid();
                             Admin.UserName = Admin.Email;
-                            Admin.NormalizedUserName = Admin?.Email?.ToUpper();
-                            Admin.NormalizedEmail = Admin.Email?.ToUpper();
-                            Admin.SecurityStamp = Guid.NewGuid().ToString();
                             Admin.IsAvailable = true;
-                            Admin.PasswordHash = _passwordHasher.HashPassword(Admin, "Elixir*Super*Admin2030$");
                             Admin.EmailConfirmed = true;
-                            if (AdminRole != null)
+
+                            var createResult = await _userManager.CreateAsync(Admin, "Elixir*Super*Admin2030$");
+
+                            if (createResult.Succeeded)
                             {
-                                NewAdminsRoles.Add(new IdentityUserRole<Guid>
-                                {
-                                    UserId = Admin.Id,
-                                    RoleId = AdminRole.Id
-                                });
+                                await _userManager.AddToRoleAsync(Admin, ElixirRoles.Admin);
+                            }
+                            else
+                            {
+                                List<string> errors = createResult.Errors.Select(e => e.Description).ToList();
+                                throw new BadRequestException(errors);
                             }
                         }
-                        await _dbContext.Users.AddRangeAsync(Admins);
-                        if (NewAdminsRoles.Any())
-                        {
-                            await _dbContext.UserRoles.AddRangeAsync(NewAdminsRoles);
-                        }
-                        await _dbContext.SaveChangesAsync();
                     }
                 }
             }
