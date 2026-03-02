@@ -18,7 +18,7 @@ namespace Shared
         public bool? IsAvailable { get; set; }
         [Range(1, 8, ErrorMessage = "Blood Types From 1 To 8")]
         public int? BloodType { get; set; }
-        public int PageNumber { get; set; } = 1;
+        public int PageIndex { get; set; } = 1;
         private int pagesize = DefaultPageSize;
         public int Pagesize
         {

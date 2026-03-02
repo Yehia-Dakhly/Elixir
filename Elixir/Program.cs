@@ -79,8 +79,6 @@ namespace Blood_Donation
                 //Console.WriteLine(key); 
                 #endregion
 
-
-
                 #region AddSwaggerService
                 builder.Services.AddEndpointsApiExplorer();
                 builder.Services.AddSwaggerGen(Options =>
@@ -112,7 +110,6 @@ namespace Blood_Donation
                 });
                 #endregion
 
-
                 builder.Services.AddHttpContextAccessor();
 
                 #region DbContext - DB
@@ -121,7 +118,6 @@ namespace Blood_Donation
                     Options.UseSqlServer(builder.Configuration["ConnectionStrings:DefaultConnection"]);
                 });
                 #endregion
-
 
                 #region Services
                 builder.Services.AddScoped<IDataSeed, DataSeed>();
@@ -206,15 +202,12 @@ namespace Blood_Donation
                     });
                 #endregion
 
-
-
                 #region Redis
                 builder.Services.AddSingleton<IConnectionMultiplexer>((_) =>
                 {
                     return ConnectionMultiplexer.Connect(builder.Configuration["ConnectionStrings:RedisConnection"]!);
                 });
                 #endregion
-
 
                 #region RabbitMQ
                 builder.Services.AddMassTransit(conf =>
@@ -262,8 +255,6 @@ namespace Blood_Donation
                 });
                 #endregion
 
-
-
                 #region Auth
                 // Default Providers
                 builder.Services.Configure<DataProtectionTokenProviderOptions>(O => // Data Protector Token Provider
@@ -303,8 +294,6 @@ namespace Blood_Donation
                     });
                 #endregion
 
-
-
                 #region System Health
                 var healthChecksBuilder = builder.Services.AddHealthChecks()
                     .AddDbContextCheck<BloodDonationDbContext>(name: "SQL Database")
@@ -321,15 +310,13 @@ namespace Blood_Donation
                 #endregion
 
 
-
                 // For Options Patterns
                 builder.Services.Configure<BloodDonationSettings>(builder.Configuration.GetSection("BloodDonationSettings"));
                 // For Worker
                 builder.Services.AddHostedService<RedisDataSeeder>();
                 var app = builder.Build();
 
-                #region Data Seeding
-                #region Default Roles
+                #region Data Seeding Roles & Data
                 using (var scope = app.Services.CreateScope())
                 {
                     var services = scope.ServiceProvider;
@@ -351,9 +338,9 @@ namespace Blood_Donation
                         var logger = services.GetRequiredService<ILogger<Program>>();
                         logger.LogError(ex, "An error occurred while seeding roles.");
                     }
-                }
-                #endregion                
+                }           
                 #endregion
+
                 app.UseMiddleware<CorrelationalIdMiddleWare>();
                 app.UseSerilogRequestLogging();
                 app.UseMiddleware<ExceptionMiddleWare>();
@@ -391,7 +378,7 @@ namespace Blood_Donation
                 #endregion
 
                 app.MapControllers();
-                app.MapHub<RequestsHub>("/Hubs/requests");
+                app.MapHub<RequestsHub>("/requestsHub");
 
                 app.MapGet("/", async context =>
                 {

@@ -142,7 +142,7 @@ namespace Service
                        && (!queryParams.BloodType.HasValue || U.BloodTypeId == queryParams.BloodType)
                        && (!queryParams.GovernorateId.HasValue || U.City.GovernorateId == queryParams.GovernorateId)
                     )
-                ).Skip((queryParams.PageNumber - 1) * queryParams.Pagesize).Take(queryParams.Pagesize);
+                ).Skip((queryParams.PageIndex - 1) * queryParams.Pagesize).Take(queryParams.Pagesize);
             var CountUsers = _userManager.Users.Include(U => U.City).Count
                 (
                     U =>
