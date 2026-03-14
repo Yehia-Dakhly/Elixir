@@ -6,6 +6,7 @@
 [![RabbitMQ](https://img.shields.io/badge/RabbitMQ-MassTransit-FF6600?style=flat-square&logo=rabbitmq)](https://www.rabbitmq.com/)
 [![SignalR](https://img.shields.io/badge/SignalR-Real%20Time-0078D4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/en-us/apps/aspnet/signalr)
 [![Serilog](https://img.shields.io/badge/Serilog-Structured%20Logging-green?style=flat-square)](https://serilog.net/)
+[![Firebase Cloud Messaging](https://img.shields.io/badge/Firebase-Cloud%20Messaging-FFCA28?style=flat-square&logo=firebase)](https://firebase.google.com/docs/cloud-messaging)
 [![New Relic](https://img.shields.io/badge/New%20Relic-Observability%20%26%20Alerts-008C99?style=flat-square&logo=newrelic)](https://newrelic.com/)
 [![Clean Architecture](https://img.shields.io/badge/Architecture-Onion%2FClean-orange?style=flat-square)](#)
 
@@ -97,6 +98,7 @@ The database is highly normalized and designed to handle complex relationships, 
 * **Smart Notifications:** Intelligent push notifications via FCM tailored to compatible blood types and proximity.
 * **Secure Authentication:** Multi-layered security with JWT, Refresh Tokens, and Google OAuth integration.
 * **Health Data Management:** Securely handles sensitive donor information and donation history.
+* **Comprehensive Admin Dashboard:** A fully integrated management interface providing admins with real-time analytics on donor readiness, blood type distributions, request success/failure rates, and the ability to broadcast system-wide notifications.
 
 ---
 
@@ -104,9 +106,11 @@ The database is highly normalized and designed to handle complex relationships, 
 
 This backend is built focusing on **Performance, Scalability, Observability, and Real-Time Communication**:
 
+* 📊 **Data Analytics & System Management:** Developed a robust `Dashboard` exposing specialized endpoints to aggregate and calculate complex system metrics (using EF Core optimizations) for monitoring of critical blood requests and donor distribution.
 * 🩺 **Resilient Infrastructure Monitoring:** Integrated **ASP.NET Core Health Checks** to continuously monitor the heartbeat of critical dependencies (SQL Server, Redis, and RabbitMQ). This enables load balancers and container orchestrators to automatically route traffic or restart instances if a service degrades.
 * 🔭 **Observability & Proactive Monitoring (Serilog + New Relic):** Implemented **Centralized Structured Logging** using Serilog, securely forwarding all application logs to **New Relic Cloud**.
-* Engineered a **Global Exception Handling Middleware** to catch unhandled exceptions, secure API responses, and automatically inject a **Correlation ID** into every request for end-to-end traceability across the system.
+* Engineered a dedicated **Correlation ID Middleware** to automatically generate and inject a unique identifier into the HTTP Context and Serilog context for end-to-end distributed tracing.
+* Implemented a **Global Exception Middleware** to securely catch unhandled errors, map custom domain exceptions to HTTP status codes, and return standardized JSON responses containing the Correlation ID for easier debugging.
 * Configured **Proactive Alerting (NRQL)** in New Relic to trigger instant email notifications to the engineering team upon critical server errors (500 Internal Server Error), ensuring rapid incident response.
 
 

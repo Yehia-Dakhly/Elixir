@@ -63,15 +63,15 @@ namespace Blood_Donation
                 Log.Information("Starting Elixir API Application...");
 
                 builder.Services.AddControllers();
-                builder.Services.AddCors(Options =>
-                {
-                    Options.AddPolicy("AllowAll", Builder =>
-                    {
-                        Builder.AllowAnyHeader();
-                        Builder.AllowAnyMethod();
-                        Builder.AllowAnyOrigin();
-                    });
-                });
+                //builder.Services.AddCors(Options =>
+                //{
+                //    Options.AddPolicy("AllowAll", Builder =>
+                //    {
+                //        Builder.AllowAnyHeader();
+                //        Builder.AllowAnyMethod();
+                //        Builder.AllowAnyOrigin();
+                //    });
+                //});
                 builder.Host.UseSerilog(); // Tell the host to use Serilog for logging
 
                 #region API Key
