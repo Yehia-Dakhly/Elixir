@@ -15,5 +15,6 @@ namespace Shared.DataTransferObjects.Authentication
         public string Email { get; set; } = null!;
         public string CityName { get; set; } = null!;
         public string GovernorateName { get; set; } = null!;
+        public int BloodTypeId { get; set; }
     }
 }

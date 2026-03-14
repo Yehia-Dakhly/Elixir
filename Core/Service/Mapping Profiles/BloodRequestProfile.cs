@@ -24,8 +24,8 @@ namespace Service.Mapping_Profiles
 
             CreateMap<BloodRequests, PersonalRequestsDTo>()
                 .ForMember(R => R.BloodRequestDTo, O => O.MapFrom(R => R))
-                .ForMember(R => R.ResponsesDTos, O => O.MapFrom(R => R.DonationResponses))
-                .ForMember(R => R.ResponsesDTos, O => O.MapFrom(R => R.DonationResponses.OrderBy(R => R.ResponseStatus).ThenBy(R => R.ResponseAt)));
+                .ForMember(R => R.ResponsesDTos, O => O.MapFrom(R => R.DonationResponses != null
+                ? R.DonationResponses.OrderBy(R => R.ResponseStatus).ThenBy(R => R.ResponseAt) : null));
         
         }
     }

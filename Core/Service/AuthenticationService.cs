@@ -150,7 +150,8 @@ namespace Service
                     CityName = User.City.NameAr,
                     GovernorateName = User.City.Governorate.NameAr,
                     RefreshToken = rawRefreshToken,
-                    RefreshTokenExpiration = refreshTokenEntity.ExpiresOn
+                    RefreshTokenExpiration = refreshTokenEntity.ExpiresOn,
+                    BloodTypeId = User.BloodTypeId,
                 };
             }
             else
@@ -219,7 +220,8 @@ namespace Service
                 CityName = User.City.NameAr,
                 GovernorateName = User.City.Governorate.NameAr,
                 RefreshToken = rawRefreshToken,
-                RefreshTokenExpiration = refreshTokenEntity.ExpiresOn
+                RefreshTokenExpiration = refreshTokenEntity.ExpiresOn,
+                BloodTypeId = User.BloodTypeId,
             };
         }
         private async Task<string> CreateTokenAsync(BloodDonationUser user)

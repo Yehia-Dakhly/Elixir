@@ -13,5 +13,6 @@ namespace Shared.DataTransferObjects
         public string Gender { get; set; } = null!;
         public string BloodType { get; set; } = null!;
         public string PhoneNumber { get; set; } = null!;
+        public DateTime DateOfBirth { get; set; }
     }
 }

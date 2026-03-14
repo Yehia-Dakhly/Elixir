@@ -24,7 +24,7 @@ namespace Persistence
             }
             if (specifications.OrderByDescending is not null)
             {
-                Query.OrderByDescending(specifications.OrderByDescending);
+                Query = Query.OrderByDescending(specifications.OrderByDescending);
             }
             if (specifications.IncludeExpressions is not null && specifications.IncludeExpressions.Count > 0)
             {

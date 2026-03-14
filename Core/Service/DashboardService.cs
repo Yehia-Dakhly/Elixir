@@ -27,6 +27,16 @@ namespace Service
         ) 
         : IDashboardService
     {
+        public async Task<PaginatedResult<AdminNotificationDTo>> GetNotificationsForAdminAsync(AdminNotificationQueryParams queryParams)
+        {
+            var Repository = _unitOfWork.GetRepository<NotificationBase, long>();
+            var Specification = new GeneralAdminNotificationSpecification(queryParams);
+            var Notifications = await Repository.GetAllAsync(Specification);
+            var CountSpecification = new GeneralAdminNotificationCountSpecification(queryParams);
+            var TotalCount = await Repository.CountAsync(CountSpecification);
+            var mappedNotifications = _mapper.Map<IEnumerable<AdminNotificationDTo>>(Notifications);
+            return new PaginatedResult<AdminNotificationDTo>(queryParams.PageSize, queryParams.PageIndex, TotalCount, mappedNotifications);
+        }
         public async Task<float> GetCompleteRequestsPercentageAsync()
         {
             var RequestRepo = _unitOfWork.GetRepository<BloodRequests, int>();

@@ -18,5 +18,6 @@ namespace ServiceAbstraction
         public Task<float> GetDonorsReadinessPercentageAsync();
         public Task<PaginatedResult<ElixirUserDTo>> GetElixirUsersAsync(UsersQueryParams queryParams);
         public Task SendSystemNotificationAsync(SystemNotificationQueryParams queryParams);
+        public Task<PaginatedResult<AdminNotificationDTo>> GetNotificationsForAdminAsync(AdminNotificationQueryParams queryParams);
     }
 }

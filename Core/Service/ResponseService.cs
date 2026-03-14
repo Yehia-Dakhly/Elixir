@@ -44,6 +44,14 @@ namespace Service
             if (LastDonationHistory != null)
             {
                 var MinDaysInterval = Donor.Gender == DomainLayer.Models.Gender.Male ? LastDonationHistory.DonationCategory.MaleMinDaysInterval : LastDonationHistory.DonationCategory.FemaleMinDaysInterval;
+                
+                
+                if ((DateTime.UtcNow - LastDonationHistory.DonationDate).TotalSeconds < 86400)
+                {
+                    _logger.LogInformation("Donor with Id {DonorId} attempted to respond to Blood Request with Id {BloodRequestId} but has recently responded to another request. Last Donation Date: {LastDonationDate}", DonorId, BloodRequestId, LastDonationHistory.DonationDate);
+                    throw new BadRequestException(new List<string>() { "لقد قمت بالاستجابة لطلب للتو، يرجى الانتظار قليلاً قبل الاستجابة لطلب آخر." });
+                }
+
                 if ((DateTime.UtcNow - LastDonationHistory.DonationDate).TotalDays > MinDaysInterval)
                 {
                     return await TryDonate(DonorId, BloodRequestId, Donor);
@@ -66,7 +74,8 @@ namespace Service
         {
 
             var BRRepo = _unitOfWork.GetRepository<BloodRequests, int>();
-            var BloodRequest = await BRRepo.GetByIdAsync(BloodRequestId) ?? throw new BloodRequestNotFoundException(BloodRequestId);
+            var Specification = new RequestWithRequesterSpecification(BloodRequestId);
+            var BloodRequest = await BRRepo.GetByIdAsync(Specification) ?? throw new BloodRequestNotFoundException(BloodRequestId);
             // Check For Distance !!!
             var RequestLocationLong = BloodRequest.Longitude;
             var RequestLocationLatit = BloodRequest.Latitude;

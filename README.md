@@ -4,6 +4,7 @@
 [![Entity Framework Core](https://img.shields.io/badge/EF%20Core-Code%20First-339933?style=flat-square)](https://docs.microsoft.com/en-us/ef/core/)
 [![Redis](https://img.shields.io/badge/Redis-Caching%20%26%20GeoSpatial-dc382d?style=flat-square&logo=redis)](https://redis.io/)
 [![RabbitMQ](https://img.shields.io/badge/RabbitMQ-MassTransit-FF6600?style=flat-square&logo=rabbitmq)](https://www.rabbitmq.com/)
+[![SignalR](https://img.shields.io/badge/SignalR-Real%20Time-0078D4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/en-us/apps/aspnet/signalr)
 [![Serilog](https://img.shields.io/badge/Serilog-Structured%20Logging-green?style=flat-square)](https://serilog.net/)
 [![New Relic](https://img.shields.io/badge/New%20Relic-Observability%20%26%20Alerts-008C99?style=flat-square&logo=newrelic)](https://newrelic.com/)
 [![Clean Architecture](https://img.shields.io/badge/Architecture-Onion%2FClean-orange?style=flat-square)](#)
