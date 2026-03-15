@@ -13,6 +13,7 @@ namespace Service.Specifications.DonationHistorySpecification
     {
         public DonationHistoryToUser(DonationHistoryQueryParams Params, Guid UserId) : base(H =>  H.DonorId == UserId)
         {
+            AddInculde(H => H.DonationCategory);
             switch (Params.DonationHistorySorting)
             {
                 case DonationHistorySorting.DateAsc:

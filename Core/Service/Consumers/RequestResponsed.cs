@@ -6,7 +6,7 @@ using MassTransit;
 using MassTransit.Transports;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using Shared;
 using Shared.Events;
 

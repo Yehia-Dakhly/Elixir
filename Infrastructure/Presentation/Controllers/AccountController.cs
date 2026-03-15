@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Service;
 using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using Shared;
 using Shared.Constants;
 using Shared.DataTransferObjects;

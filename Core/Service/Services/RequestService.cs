@@ -12,13 +12,13 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Service.Specifications;
 using Service.Specifications.RequestSpecifications;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using Shared;
 using Shared.DataTransferObjects;
 using Shared.Events;
 using System.Security.Claims;
 
-namespace Service
+namespace Service.Services
 {
     public class RequestService(
         IUnitOfWork _unitOfWork,

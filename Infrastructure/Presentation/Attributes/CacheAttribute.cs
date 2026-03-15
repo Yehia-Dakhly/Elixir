@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using System.Text;
 
 namespace Blood_Donation.Attributes

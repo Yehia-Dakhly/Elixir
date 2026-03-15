@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Service.Specifications;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using Shared.Constants;
 using Shared.DataTransferObjects.Authentication;
 using Shared.DataTransferObjects.Authentication.PasswordsAndOTPDTos;
@@ -27,7 +27,7 @@ using System.Text;
 using Gender = DomainLayer.Models.Gender;
 
 
-namespace Service
+namespace Service.Services
 {
     public class AuthenticationService(
         UserManager<BloodDonationUser> _userManager,
@@ -79,7 +79,7 @@ namespace Service
                         routeName: "confirm-email",
                         values: new
                         {
-                            Email = NewUser.Email,
+                            NewUser.Email,
                             Token = EncodedToken
                         },
                         scheme: contxt.Request.Scheme,

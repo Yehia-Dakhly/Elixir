@@ -13,12 +13,12 @@ using Service.Specifications;
 using Service.Specifications.DonationHistorySpecification;
 using Service.Specifications.DonationReponseSpecification;
 using Service.Specifications.RequestSpecifications;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using Shared;
 using Shared.DataTransferObjects;
 using Shared.Events;
 
-namespace Service
+namespace Service.Services
 {
     public class ResponseService(
         IUnitOfWork _unitOfWork,

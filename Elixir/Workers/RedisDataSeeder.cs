@@ -3,7 +3,7 @@ using DomainLayer.Optopns;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 
 namespace Blood_Donation.Workers
 {

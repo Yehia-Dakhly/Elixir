@@ -1,8 +1,8 @@
 ﻿using DomainLayer.Contracts;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using System.Text.Json;
 
-namespace Service
+namespace Service.Services
 {
     public class CacheService(ICacheRepository _cacheRepository) : ICacheService
     {

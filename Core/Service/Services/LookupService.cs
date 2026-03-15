@@ -2,7 +2,7 @@
 using DomainLayer.Contracts;
 using DomainLayer.Models;
 using Service.Specifications;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using Shared.DataTransferObjects;
 using System;
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Service
+namespace Service.Services
 {
     public class LookupService(IUnitOfWork _unitOfWork, IMapper _mapper) : ILookupService
     {

@@ -3,7 +3,7 @@ using DomainLayer.Models;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using Shared.Events;
 using System;
 using System.Collections.Generic;

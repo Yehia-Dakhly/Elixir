@@ -18,6 +18,7 @@ namespace Service.Specifications
         public CompleteNotificationSpecification(NotificationQueryParams Params, Guid UserId) : base(C => C.UserId == UserId)
         {
             AddInculde(C => C.NotificationBase);
+            AddOrderByDescending(C => C.NotificationBase.SendAt);
             ApplyPagination(Params.PageSize, Params.PageNumber);
         }
     }

@@ -6,11 +6,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Configuration;
 using Service.Specifications;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using System.Text.Json;
 using static MassTransit.ValidationResultExtensions;
 
-namespace Service
+namespace Service.Services
 {
     public class CompatibilityService(
         IUnitOfWork _unitOfWork,

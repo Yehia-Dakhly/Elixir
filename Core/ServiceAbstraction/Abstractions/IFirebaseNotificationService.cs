@@ -1,6 +1,6 @@
 ﻿using Shared.DataTransferObjects;
 
-namespace ServiceAbstraction
+namespace ServiceAbstraction.Abstractions
 {
     public interface IFirebaseNotificationService
     {

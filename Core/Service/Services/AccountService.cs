@@ -9,14 +9,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Service.Specifications;
 using Service.Specifications.DonationHistorySpecification;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using Shared;
 using Shared.DataTransferObjects;
 using Shared.DataTransferObjects.Authentication.PasswordsAndOTPDTos;
 using System.Security.Claims;
 
 
-namespace Service
+namespace Service.Services
 {
     public class AccountService(
         UserManager<BloodDonationUser> _userManager,

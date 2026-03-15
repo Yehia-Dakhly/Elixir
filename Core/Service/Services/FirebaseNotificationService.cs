@@ -2,10 +2,10 @@
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Logging;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using Shared.DataTransferObjects;
 
-namespace Service
+namespace Service.Services
 {
     public class FirebaseNotificationService : IFirebaseNotificationService
     {

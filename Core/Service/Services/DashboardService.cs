@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Service.Specifications;
 using Service.Specifications.DonationReponseSpecification;
 using Service.Specifications.RequestSpecifications;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using Shared;
 using Shared.DataTransferObjects;
 using Shared.Events;
@@ -17,7 +17,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Service
+namespace Service.Services
 {
     public class DashboardService(
         IUnitOfWork _unitOfWork,
@@ -52,7 +52,7 @@ namespace Service
             var CompletedRequestsCount = await RequestRepo.CountAsync(RequestTotalCompletedCountSpeci);
 
 
-            float percentage = ((float)CompletedRequestsCount / TotalRequestsCount) * 100;
+            float percentage = (float)CompletedRequestsCount / TotalRequestsCount * 100;
 
             return (float)Math.Round(percentage, 1);
         }
@@ -90,28 +90,28 @@ namespace Service
                 switch(i)
                 {
                     case 1:
-                        BloodTypesPercentages.APlus = (float)Math.Round(((float)Count / TotalCount) * 100, 1);
+                        BloodTypesPercentages.APlus = (float)Math.Round((float)Count / TotalCount * 100, 1);
                         break;
                     case 2:
-                        BloodTypesPercentages.AMinus = (float)Math.Round(((float)Count / TotalCount) * 100, 1);
+                        BloodTypesPercentages.AMinus = (float)Math.Round((float)Count / TotalCount * 100, 1);
                         break;
                     case 3:
-                        BloodTypesPercentages.BPlus = (float)Math.Round(((float)Count / TotalCount) * 100, 1);
+                        BloodTypesPercentages.BPlus = (float)Math.Round((float)Count / TotalCount * 100, 1);
                         break;
                     case 4:
-                        BloodTypesPercentages.BMinus = (float)Math.Round(((float)Count / TotalCount) * 100, 1);
+                        BloodTypesPercentages.BMinus = (float)Math.Round((float)Count / TotalCount * 100, 1);
                         break;
                     case 5:
-                        BloodTypesPercentages.ABPlus = (float)Math.Round(((float)Count / TotalCount) * 100, 1);
+                        BloodTypesPercentages.ABPlus = (float)Math.Round((float)Count / TotalCount * 100, 1);
                         break;
                     case 6:
-                        BloodTypesPercentages.ABMinus = (float)Math.Round(((float)Count / TotalCount) * 100, 1);
+                        BloodTypesPercentages.ABMinus = (float)Math.Round((float)Count / TotalCount * 100, 1);
                         break;
                     case 7:
-                        BloodTypesPercentages.OPlus = (float)Math.Round(((float)Count / TotalCount) * 100, 1);
+                        BloodTypesPercentages.OPlus = (float)Math.Round((float)Count / TotalCount * 100, 1);
                         break;
                     case 8:
-                        BloodTypesPercentages.OMinus = (float)Math.Round(((float)Count / TotalCount) * 100, 1);
+                        BloodTypesPercentages.OMinus = (float)Math.Round((float)Count / TotalCount * 100, 1);
                         break;
                     default:
                         break;
@@ -136,7 +136,7 @@ namespace Service
                 return 0f;
             }
             var IAvailable = TotalDonors.FirstOrDefault(T => T.IsAvailable == true)?.Count ?? 0;
-            float percentage = (float)Math.Round(((float)IAvailable / TotalCount) * 100, 1);
+            float percentage = (float)Math.Round((float)IAvailable / TotalCount * 100, 1);
 
             return percentage;
         }
@@ -145,24 +145,24 @@ namespace Service
             var Users = _userManager.Users.Include(U => U.City).Where
                 (
                     U =>
-                    (
+                    
                        (string.IsNullOrEmpty(queryParams.Search) || U.FullName.Contains(queryParams.Search))
                        && (!queryParams.IsAvailable.HasValue || U.IsAvailable == queryParams.IsAvailable)
                        && (!queryParams.CityId.HasValue || U.CityId == queryParams.CityId)
                        && (!queryParams.BloodType.HasValue || U.BloodTypeId == queryParams.BloodType)
                        && (!queryParams.GovernorateId.HasValue || U.City.GovernorateId == queryParams.GovernorateId)
-                    )
+                    
                 ).Skip((queryParams.PageIndex - 1) * queryParams.Pagesize).Take(queryParams.Pagesize);
             var CountUsers = _userManager.Users.Include(U => U.City).Count
                 (
                     U =>
-                    (
+                    
                        (string.IsNullOrEmpty(queryParams.Search) || U.FullName.Contains(queryParams.Search))
                        && (!queryParams.IsAvailable.HasValue || U.IsAvailable == queryParams.IsAvailable)
                        && (!queryParams.CityId.HasValue || U.CityId == queryParams.CityId)
                        && (!queryParams.BloodType.HasValue || U.BloodTypeId == queryParams.BloodType)
                        && (!queryParams.GovernorateId.HasValue || U.City.GovernorateId == queryParams.GovernorateId)
-                    )
+                    
                 );
             /*
              * Skip = (PageIndex - 1) * PageSize;
@@ -197,7 +197,7 @@ namespace Service
             var ConfirmedSpeification = new ResponseConfirmedSpeification();
             var ConfirmedCount = await ResponseRepo.CountAsync(ConfirmedSpeification);
 
-            float Percentage = ((float)ConfirmedCount / TotalCount) * 100;
+            float Percentage = (float)ConfirmedCount / TotalCount * 100;
 
             return (float)Math.Round(Percentage, 1);
         }
@@ -214,7 +214,7 @@ namespace Service
             var FailedSpeification = new ResponseFailedSpeification();
             var FailedCount = await ResponseRepo.CountAsync(FailedSpeification);
 
-            float Percentage = ((float)FailedCount / TotalCount) * 100;
+            float Percentage = (float)FailedCount / TotalCount * 100;
 
             return (float)Math.Round(Percentage, 1);
         }

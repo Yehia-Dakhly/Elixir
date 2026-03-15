@@ -8,13 +8,13 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Service.Specifications;
 using Service.Specifications.DonationHistorySpecification;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using Shared.DataTransferObjects;
 using StackExchange.Redis;
 using System.Drawing;
 using static Google.Apis.Requests.BatchRequest;
 
-namespace Service
+namespace Service.Services
 {
     public class GeoLocationService(
         IConnectionMultiplexer _connectionMultiplexer,

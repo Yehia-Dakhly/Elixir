@@ -2,7 +2,7 @@
 using Shared.DataTransferObjects;
 using System.Numerics;
 
-namespace ServiceAbstraction
+namespace ServiceAbstraction.Abstractions
 {
     public interface IRequestService
     {

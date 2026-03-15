@@ -1,6 +1,6 @@
 ﻿using Blood_Donation.Hubs;
 using Microsoft.AspNetCore.SignalR;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using Shared;
 
 namespace Blood_Donation.Services

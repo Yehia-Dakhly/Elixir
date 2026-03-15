@@ -5,7 +5,7 @@ using DomainLayer.Exceptions.NotFoundExceptions;
 using DomainLayer.Models;
 using Microsoft.Extensions.Logging;
 using Service.Specifications;
-using ServiceAbstraction;
+using ServiceAbstraction.Abstractions;
 using Shared;
 using Shared.DataTransferObjects;
 using System;
@@ -14,7 +14,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Service
+namespace Service.Services
 {
     public class NotificationService(
         IUnitOfWork _unitOfWork,
