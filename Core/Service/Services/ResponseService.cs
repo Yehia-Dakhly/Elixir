@@ -144,8 +144,10 @@ namespace Service.Services
             if (HasDonated == true)
             {
                 BloodRequest.CollectedBags++;
+                BloodRequest.ResponsesCount--;
                 Response.ResponseStatus = DomainLayer.Models.ResponseStatus.Arrived;
                 await _unitOfWork.SaveChangesAsync();
+                await _requestsUpdateServiceSR.UpdateRequestAsync(BloodRequestId, new RequestUpdateSignalRDTo() { CollectedCount = BloodRequest.CollectedBags, ResponsesCount = BloodRequest.ResponsesCount });
                 if (BloodRequest.CollectedBags >= BloodRequest.BagsCount)
                 {
                     BloodRequest.Status = Status.Completed;
