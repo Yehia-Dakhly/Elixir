@@ -18,6 +18,12 @@ namespace Service.Specifications
         public Expression<Func<TEntity, bool>>? Criteria { get; }
 
         public List<Expression<Func<TEntity, object>>> IncludeExpressions { get; } = new List<Expression<Func<TEntity, object>>>();
+        public List<string> IncludeStrings { get; } = new List<string>();
+
+        protected void AddInculde(string includeString)
+        {
+            IncludeStrings.Add(includeString);
+        }
         protected void AddInculde(Expression<Func<TEntity, object>> includeExpression)
         {
             IncludeExpressions.Add(includeExpression);

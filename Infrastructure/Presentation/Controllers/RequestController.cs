@@ -18,17 +18,17 @@ namespace Presentation.Controllers
         [HttpGet("requests")]
         public async Task<ActionResult<PaginatedResult<BloodRequestDTo>>> GetRequests(RequestQueryParams Params) // Query Params
         {
-            return Ok(await _serviceManager.RequestService.GetRequestsAsync(Params));
+            return Ok(await _serviceManager.RequestService.GetRequestsAsync(Params, GetUserId()));
         }
         [HttpGet("personal-requests")]
         public async Task<ActionResult<PaginatedResult<PersonalRequestsDTo>>> GetPersonalRequests(PersonalRequestsQueryParams Params) // Query Params
         {
-            return Ok(await _serviceManager.RequestService.GetPersonalRequestsAsync(Params));
+            return Ok(await _serviceManager.RequestService.GetPersonalRequestsAsync(Params, GetUserId()));
         }
         [HttpGet("request")]
         public async Task<ActionResult<PaginatedResult<BloodRequestDTo>>> GetRequestById(int Id)
         {
-            return Ok(await _serviceManager.RequestService.GetRequestByIdAsync(Id));
+            return Ok(await _serviceManager.RequestService.GetRequestByIdAsync(Id, GetUserId()));
         }
         [HttpPatch("close")]
         public async Task<ActionResult> CloseBloodRequest(int RequestId)

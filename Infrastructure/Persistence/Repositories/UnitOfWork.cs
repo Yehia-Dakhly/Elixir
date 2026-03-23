@@ -21,7 +21,7 @@ namespace Persistence.Repositories
             }
             else
             {
-                var Repo = new GenericRepository<TKey, TEntity>(_dbContext);
+                var Repo = new GenericRepository<TEntity, TKey>(_dbContext);
                 _repositories.Add(Type, Repo);
                 return Repo;
             }

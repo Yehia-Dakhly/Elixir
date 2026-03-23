@@ -1,6 +1,7 @@
 ﻿using Blood_Donation.Attributes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Presentation.Attributes;
 using ServiceAbstraction;
 using Shared.DataTransferObjects;
 using System;
@@ -13,6 +14,7 @@ namespace Presentation.Controllers
 {
     [Cache]
     [AllowAnonymous]
+    [SkipApiKey]
     public class LookupController(IServiceManager _serviceManager) : ApiBaseController
     {
         [HttpGet("blood-types")]

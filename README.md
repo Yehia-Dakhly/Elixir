@@ -212,13 +212,13 @@ cd Elixir
 Place your downloaded Firebase service account key file (must be named `elixir-firebase-adminsdk.json`) directly into the root directory of the API project (`Elixir.API`).
 
 **3. Configure Environment Variables:**
-Navigate to the API project (`Elixir.API`) and open `appsettings.json` file. Ensuring you replace all the placeholder values (e.g., `YOUR_API_KEY_HERE`, `YOUR_NEW_RELIC_LICENSE_KEY`) with your actual credentials.
+Navigate to the API project (`Elixir.API`) and open `appsettings.json` file. Ensure you replace all the placeholder values (e.g., `YOUR_API_KEY_HERE`, `YOUR_NEW_RELIC_LICENSE_KEY`) with your actual credentials.
 
 **4. Apply Database Migrations:**
 Open your terminal in the root directory of the solution and run the following command to create the database and apply Entity Framework migrations:
 
 ```bash
-dotnet ef database update --project Infrastructure/Persistence --startup-project Elixir --context BloodDonationDbContext
+dotnet ef database update --project Infrastructure/Persistence --startup-project Elixir.API --context BloodDonationDbContext
 
 ```
 
@@ -226,7 +226,7 @@ dotnet ef database update --project Infrastructure/Persistence --startup-project
 Navigate to the API project folder and start the server:
 
 ```bash
-cd Elixir
+cd Elixir.API
 dotnet run
 
 ```
@@ -247,8 +247,6 @@ To interact with the protected endpoints via Swagger or Postman, you must provid
 
 This complete system was conceptualized and brought to life by a dedicated cross-functional team:
 
-* **Founder, Tech Lead & System Architect:** [Yehia Mohamed Dakhly](https://www.google.com/search?q=https://www.linkedin.com/in/yehia-dakhly/) - *Conceived the product idea, engineered the complete system architecture, assembled the development team, and managed the entire project lifecycle from initial analysis to final API deployment.*
-* **UI/UX Designer:** [Somaya Asaad](https://www.google.com/search?q=https://www.linkedin.com/in/somaya-asaad-10005b322/) - *Architected the end-to-end user journey and visual identity, crafting high-fidelity, empathy-driven interfaces focused on accessibility and a seamless donor-patient experience.*
-* **Flutter Developer:** [Zaid Salah](https://www.google.com/search?q=https://www.linkedin.com/in/ziad-salah-338378262/) - *Engineered the high-performance cross-platform mobile experience, implementing complex state management and real-time backend synchronization to ensure a responsive connection between users.*
-
----
+* **Founder, Tech Lead & System Architect:** [Yehia Mohamed Dakhly](https://www.linkedin.com/in/yehia-dakhly/) - *Conceived the product idea, engineered the complete system architecture, assembled the development team, and managed the entire project lifecycle from initial analysis to final API deployment.*
+* **UI/UX Designer:** [Somaya Asaad](https://www.linkedin.com/in/somaya-asaad-10005b322/) - *Architected the end-to-end user journey and visual identity, crafting high-fidelity, empathy-driven interfaces focused on accessibility and a seamless donor-patient experience.*
+* **Flutter Developer:** [Zaid Salah](https://www.linkedin.com/in/ziad-salah-338378262/) - *Engineered the high-performance cross-platform mobile experience, implementing complex state management and seamlessly integrating with the backend REST APIs and real-time SignalR streams to deliver a smooth, interactive user experience.*

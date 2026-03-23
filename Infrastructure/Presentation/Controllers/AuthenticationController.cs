@@ -17,6 +17,7 @@ namespace Presentation.Controllers
         //    throw new Exception("This is a simulated fatal error to test New Relic alerts!");
         //}
         [HttpPost("login")]
+        [SkipApiKey]
         public async Task<ActionResult<AuthUserDTo>> Login(LoginDTo loginDTo)
         {
             return Ok(await _serviceManager.AuthenticationService.LoginAsync(loginDTo));

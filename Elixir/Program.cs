@@ -65,15 +65,15 @@ namespace Blood_Donation
                 Log.Information("Starting Elixir API Application...");
 
                 builder.Services.AddControllers();
-                //builder.Services.AddCors(Options =>
-                //{
-                //    Options.AddPolicy("AllowAll", Builder =>
-                //    {
-                //        Builder.AllowAnyHeader();
-                //        Builder.AllowAnyMethod();
-                //        Builder.AllowAnyOrigin();
-                //    });
-                //});
+                builder.Services.AddCors(options =>
+                {
+                    options.AddPolicy("AllowAngularDev",
+                        builder => builder
+                            .WithOrigins("http://localhost:4200")
+                            .AllowAnyMethod() 
+                            .AllowAnyHeader()
+                            .AllowCredentials()); 
+                });
                 builder.Host.UseSerilog(); // Tell the host to use Serilog for logging
 
                 #region API Key
@@ -349,6 +349,7 @@ namespace Blood_Donation
                 app.UseSwagger();
                 app.UseSwaggerUI();
                 app.UseHttpsRedirection();
+                app.UseCors("AllowAngularDev");
                 app.UseAuthentication();
                 app.UseAuthorization();
 

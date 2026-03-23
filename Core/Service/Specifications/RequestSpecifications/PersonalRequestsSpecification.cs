@@ -14,7 +14,9 @@ namespace Service.Specifications.RequestSpecifications
         public PersonalRequestsSpecification(Guid RequesterId, PersonalRequestsQueryParams queryParams) : base(R => R.RequesterId == RequesterId)
         {
             AddOrderBy(R => R.CreatedAt);
+
             AddInculde(R => R.DonationResponses);
+            AddInculde("DonationResponses.DonorUser");
             AddInculde(R => R.Requester);
             AddInculde(R => R.DonationCategory);
             AddInculde(R => R.City);

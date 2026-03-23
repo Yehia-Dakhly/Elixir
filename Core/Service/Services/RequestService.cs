@@ -25,7 +25,6 @@ namespace Service.Services
         IMapper _mapper,
         UserManager<BloodDonationUser> _userManager,
         IPublishEndpoint _publishEndpoint,
-        IHttpContextAccessor _httpContextAccessor,
         ICompatibilityService _compatibilityService,
         IOptionsSnapshot<BloodDonationSettings> _optionsSnapshot,
         ILogger<RequestService> _logger
@@ -35,13 +34,13 @@ namespace Service.Services
         {
             var Repo = _unitOfWork.GetRepository<BloodRequests, int>();
 
-            //var OpenRequestsSpecification = new OpenRequestsForUserSpecification(RequesterId);
-            //var HasActiveRequest = await Repo.GetAllAsync(OpenRequestsSpecification);
-            //if (HasActiveRequest.Any())
-            //{
-            //    _logger.LogWarning("User {UserId} attempted to create a new blood request but already has an open request with id {RequestId}", RequesterId, HasActiveRequest.First().Id);
-            //    throw new BadRequestException(new List<string>() { "لديك طلب مفتوح بالفعل." });
-            //}
+            var OpenRequestsSpecification = new OpenRequestsForUserSpecification(RequesterId);
+            var ActiveRequest = await Repo.GetByIdAsync(OpenRequestsSpecification);
+            if (ActiveRequest != null)
+            {
+                _logger.LogWarning("User {UserId} attempted to create a new blood request but already has an open request with id {RequestId}", RequesterId, ActiveRequest.Id);
+                throw new BadRequestException(new List<string>() { "لديك طلب مفتوح بالفعل." });
+            }
 
             var AllTodaySpecification = new AllCreatedRequestsTodaySpecification(RequesterId);
             var TodayRequests = await Repo.GetAllAsync(AllTodaySpecification);
@@ -109,41 +108,30 @@ namespace Service.Services
             _logger.LogInformation("User {UserId} deleted blood request with id {RequestId}", RequesterId, BloodRequestId);
             await _unitOfWork.SaveChangesAsync();
         }
-        public async Task<PaginatedResult<BloodRequestDTo>> GetRequestsAsync(RequestQueryParams Params)
+        public async Task<PaginatedResult<BloodRequestDTo>> GetRequestsAsync(RequestQueryParams Params, Guid RequesterId)
         {
             var Repo = _unitOfWork.GetRepository<BloodRequests, int>();
             IEnumerable<int>? CompatibleTypes = null;
-            Guid? RequesterId = null;
-            var UserIdString = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(UserIdString))
-            {
-                throw new UnauthorizedException("User Not Authorized");
-            }
             if (Params.SuitableRequests == true)
             {
-                var User = await _userManager.FindByIdAsync(UserIdString) ?? throw new UserNotFoundException(UserIdString);
+                var User = await _userManager.FindByIdAsync(RequesterId.ToString()) ?? throw new UserNotFoundException(RequesterId);
                 CompatibleTypes = await _compatibilityService.GetDonorCompatibleBloodTypesIdsForAllCategoriesAsync(User.BloodTypeId);
             }
             var Specification = new RequestGeneralSpecification(Params, CompatibleTypes, RequesterId);
             var Requests = await Repo.GetAllAsync(Specification);
             var CountSpecification = new RequestGeneralCountSpecification(Params);
-            var Count = await Repo.CountAsync(Specification);
+            var Count = await Repo.CountAsync(CountSpecification);
             var Data = _mapper.Map<IEnumerable<BloodRequestDTo>>(Requests);
             return new PaginatedResult<BloodRequestDTo>(Data.Count(), Params.PageNumber, Count, Data);
         }
-        public async Task<BloodRequestDTo> GetRequestByIdAsync(int RequestId)
+        public async Task<BloodRequestDTo> GetRequestByIdAsync(int RequestId, Guid UserId)
         {
             var Repo = _unitOfWork.GetRepository<BloodRequests, int>();
-            var UserIdString = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(UserIdString))
-            {
-                throw new UnauthorizedException("User Not Authorized");
-            }
             var Specification = new RequestByIdSpecification(RequestId);
             var Request = await Repo.GetByIdAsync(Specification) ?? throw new BloodRequestNotFoundException(RequestId);
-            if (Request.Status != Status.Open)
+            if (Request.Status != Status.Open || Request.Deadline < DateTime.UtcNow)
             {
-                if (Request.RequesterId.ToString() == UserIdString)
+                if (Request.RequesterId == UserId)
                 {
                     return _mapper.Map<BloodRequestDTo>(Request);
                 }
@@ -180,29 +168,15 @@ namespace Service.Services
             _logger.LogInformation("User {UserId} closed blood request with id {RequestId}", RequesterId, RequestId);
             await _unitOfWork.SaveChangesAsync();
         }
-        public async Task<PaginatedResult<PersonalRequestsDTo>> GetPersonalRequestsAsync(PersonalRequestsQueryParams queryParams)
+        public async Task<PaginatedResult<PersonalRequestsDTo>> GetPersonalRequestsAsync(PersonalRequestsQueryParams queryParams, Guid DonorId)
         {
-            var UserIdString = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new UnauthorizedException("يرجى تسجيل الدخول");
-            var PersonalSpecification = new PersonalRequestsSpecification(Guid.Parse(UserIdString), queryParams);
+            var PersonalSpecification = new PersonalRequestsSpecification(DonorId, queryParams);
             var PersonalRequestsRepo = _unitOfWork.GetRepository<BloodRequests, int>();
             var Requests = await PersonalRequestsRepo.GetAllAsync(PersonalSpecification);
-            var PersonalCountSpecification =  new PersonalRequestsCountSpecification(Guid.Parse(UserIdString), queryParams);
+            var PersonalCountSpecification =  new PersonalRequestsCountSpecification(DonorId, queryParams);
             var PersonalRequestsCount = await PersonalRequestsRepo.CountAsync(PersonalCountSpecification);
             var MappedRequests = _mapper.Map<IEnumerable<PersonalRequestsDTo>>(Requests);
             return new PaginatedResult<PersonalRequestsDTo>(queryParams.Pagesize, queryParams.PageNumber, PersonalRequestsCount, MappedRequests);
-        }
-        DateTime GetEgyptTime()
-        {
-            try
-            {
-                var egyptZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time"); // Windows
-                return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, egyptZone);
-            }
-            catch
-            {
-                var egyptZone = TimeZoneInfo.FindSystemTimeZoneById("Africa/Cairo"); // Linux/Mac
-                return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, egyptZone);
-            }
         }
     }
 }

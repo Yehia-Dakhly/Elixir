@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Service.Helpers;
-using Service.Specifications;
 using Service.Specifications.DonationHistorySpecification;
 using Service.Specifications.DonationReponseSpecification;
 using Service.Specifications.RequestSpecifications;
@@ -24,7 +23,6 @@ namespace Service.Services
         IUnitOfWork _unitOfWork,
         IMapper _mapper,
         UserManager<BloodDonationUser> _userManager,
-        //IConfiguration _configuration,
         IOptionsSnapshot<BloodDonationSettings> _optionsSnapshot,
         IPublishEndpoint _publishEndpoint,
         ICompatibilityService _compatibilityService,
@@ -37,6 +35,14 @@ namespace Service.Services
         {
             _logger.LogInformation("Received request to respond to Blood Request. DonorId: {DonorId}, BloodRequestId: {BloodRequestId}", DonorId, BloodRequestId);
             var Donor = await _userManager.FindByIdAsync(DonorId.ToString()) ?? throw new UserNotFoundException(DonorId);
+            var BRRepo = _unitOfWork.GetRepository<BloodRequests, int>();
+            var Specification = new RequestWithRequesterSpecification(BloodRequestId);
+            var BloodRequest = await BRRepo.GetByIdAsync(Specification) ?? throw new BloodRequestNotFoundException(BloodRequestId);
+
+            if (BloodRequest.RequesterId == DonorId)
+            {
+                throw new BadRequestException(new List<string>() { "لا يمكنك الرد على الطلب الخاص بك!" });
+            }
             var DHRepo = _unitOfWork.GetRepository<DonationHistory, long>();
             var Spe = new DonationHistoryByUserId(DonorId);
             var LastDonationHistory = (await DHRepo.GetAllAsync(Spe)).FirstOrDefault();
@@ -44,8 +50,8 @@ namespace Service.Services
             if (LastDonationHistory != null)
             {
                 var MinDaysInterval = Donor.Gender == DomainLayer.Models.Gender.Male ? LastDonationHistory.DonationCategory.MaleMinDaysInterval : LastDonationHistory.DonationCategory.FemaleMinDaysInterval;
-                
-                
+
+
                 if ((DateTime.UtcNow - LastDonationHistory.DonationDate).TotalSeconds < 86400)
                 {
                     _logger.LogInformation("Donor with Id {DonorId} attempted to respond to Blood Request with Id {BloodRequestId} but has recently responded to another request. Last Donation Date: {LastDonationDate}", DonorId, BloodRequestId, LastDonationHistory.DonationDate);
@@ -54,7 +60,7 @@ namespace Service.Services
 
                 if ((DateTime.UtcNow - LastDonationHistory.DonationDate).TotalDays > MinDaysInterval)
                 {
-                    return await TryDonate(DonorId, BloodRequestId, Donor);
+                    return await TryDonate(DonorId, BloodRequestId, Donor, BloodRequest);
                 }
                 else
                 {
@@ -68,14 +74,10 @@ namespace Service.Services
                     };
                 }
             }
-            return await TryDonate(DonorId, BloodRequestId, Donor);
+            return await TryDonate(DonorId, BloodRequestId, Donor, BloodRequest);
         }
-        private async Task<RespondBloodRequestDTo> TryDonate(Guid DonorId, int BloodRequestId, BloodDonationUser User)
+        private async Task<RespondBloodRequestDTo> TryDonate(Guid DonorId, int BloodRequestId, BloodDonationUser User, BloodRequests BloodRequest)
         {
-
-            var BRRepo = _unitOfWork.GetRepository<BloodRequests, int>();
-            var Specification = new RequestWithRequesterSpecification(BloodRequestId);
-            var BloodRequest = await BRRepo.GetByIdAsync(Specification) ?? throw new BloodRequestNotFoundException(BloodRequestId);
             // Check For Distance !!!
             var RequestLocationLong = BloodRequest.Longitude;
             var RequestLocationLatit = BloodRequest.Latitude;
@@ -97,7 +99,7 @@ namespace Service.Services
                     DateTime ResponseTime = DateTime.UtcNow;
                     await _publishEndpoint.Publish(new ResponseRequestedEvent() // Publihser
                     {
-                        RequesterId = $"{DonorId}",
+                        RequesterId = $"{BloodRequest.RequesterId}",
                         DonorName = User.FullName,
                         PhoneNumber = User.PhoneNumber!, // 
                         RequestId = BloodRequestId,
@@ -146,11 +148,16 @@ namespace Service.Services
                 BloodRequest.CollectedBags++;
                 BloodRequest.ResponsesCount--;
                 Response.ResponseStatus = DomainLayer.Models.ResponseStatus.Arrived;
-                await _unitOfWork.SaveChangesAsync();
-                await _requestsUpdateServiceSR.UpdateRequestAsync(BloodRequestId, new RequestUpdateSignalRDTo() { CollectedCount = BloodRequest.CollectedBags, ResponsesCount = BloodRequest.ResponsesCount });
                 if (BloodRequest.CollectedBags >= BloodRequest.BagsCount)
                 {
                     BloodRequest.Status = Status.Completed;
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+                await _requestsUpdateServiceSR.UpdateRequestAsync(BloodRequestId, new RequestUpdateSignalRDTo() { CollectedCount = BloodRequest.CollectedBags, ResponsesCount = BloodRequest.ResponsesCount });
+                
+                if (BloodRequest.Status == Status.Completed)
+                {
                     var Requester = await _userManager.FindByIdAsync(BloodRequest.RequesterId.ToString()) ?? throw new UserNotFoundException(RequesterId);
                     await _publishEndpoint.Publish(new SendNotificationEvent()
                     {
@@ -194,9 +201,9 @@ namespace Service.Services
                     Donor.MaxFailedDonationCount++;
                     await _userManager.UpdateAsync(Donor);
                     BloodRequest.ResponsesCount--;
-                    await _requestsUpdateServiceSR.UpdateRequestAsync(BloodRequestId, new RequestUpdateSignalRDTo() { CollectedCount = BloodRequest.CollectedBags, ResponsesCount = BloodRequest.ResponsesCount });
                     Response.ResponseStatus = DomainLayer.Models.ResponseStatus.Rejected;
                     await _unitOfWork.SaveChangesAsync();
+                    await _requestsUpdateServiceSR.UpdateRequestAsync(BloodRequestId, new RequestUpdateSignalRDTo() { CollectedCount = BloodRequest.CollectedBags, ResponsesCount = BloodRequest.ResponsesCount });
                     if (Donor.MaxFailedDonationCount > _bloodDonationSettings.MaxFailedDonationCount) // Add this 3 To appsettings
                     {
                         await _userManager.SetLockoutEndDateAsync(Donor, DateTimeOffset.MaxValue);

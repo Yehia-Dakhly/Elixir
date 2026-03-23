@@ -5,7 +5,7 @@ using Persistence.Data;
 
 namespace Persistence.Repositories
 {
-    public class GenericRepository<TKey, TEntity> : IGenericRepository<TEntity, TKey> where TEntity : BaseEntity<TKey>
+    public class GenericRepository<TEntity, TKey> : IGenericRepository<TEntity, TKey> where TEntity : BaseEntity<TKey>
     {
         private readonly BloodDonationDbContext _dbContext;
 
